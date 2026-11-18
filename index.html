@@ -165,6 +165,25 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .oved .in{width:84px;padding:6px 8px}.oved .btn{padding:6px 12px}
 .rulebox{font-size:12.5px;line-height:1.5;color:#fecaca;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);border-radius:10px;padding:10px 12px}
 .rulebox b{color:#fff}
+.ovtree{display:flex;flex-direction:column;gap:4px;max-height:640px;overflow:auto;padding-right:6px}
+.ovrow{display:grid;grid-template-columns:26px 10px 1fr auto 74px 14px 40px 40px;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:var(--bg2);border:1px solid var(--line)}
+.ovrow.l1{margin-left:22px}.ovrow.l2{margin-left:44px}.ovrow.l3{margin-left:66px}
+.ovrow .exp button{width:24px;height:24px;border-radius:6px;border:1px solid var(--line2);background:var(--panel);font-size:11px}
+.ovrow .nm2{font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ovrow .nm2 small{color:var(--tx3);font-weight:400}
+.ovrow .real{font-size:11.5px;color:var(--tx3);white-space:nowrap}
+.ovrow .in{padding:5px 8px;font-size:13px}.ovrow .pc{color:var(--tx3);font-size:12px}
+.ovrow .btn{padding:5px 0;font-size:13px}
+@media (max-width:640px){.ovrow{grid-template-columns:22px 10px 1fr 60px 14px 34px 34px}.ovrow .real{display:none}}
+/* comment admin menu */
+.rmenu{position:relative;margin-left:auto;flex:none}
+.rmenu .rmb{width:26px;height:24px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--tx2);font-size:14px;line-height:1}
+.rmenu .rmb:hover{border-color:#7c3aed;color:#ddd6fe}
+.rmenu .rmpop{display:none;position:absolute;right:0;top:28px;z-index:20;background:#0f1730;border:1px solid var(--line2);border-radius:10px;padding:4px;min-width:130px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.rmenu.open .rmpop{display:flex;flex-direction:column}
+.rmenu .rmpop button{text-align:left;background:none;border:none;padding:7px 10px;border-radius:7px;font-size:12.5px}
+.rmenu .rmpop button:hover{background:var(--panel2)}
+.rmenu .rmpop button.dn{color:#fca5a5}
+.fi .bd .o{display:flex;align-items:center;gap:8px}.fi .bd .o .ot{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .lvlnote{font-size:12px;color:var(--tx3);margin:-4px 0 10px}
 .tab.privt{border-color:rgba(167,139,250,.55);color:#ddd6fe}
 .tab.privt.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
@@ -1077,6 +1096,11 @@ function refreshModal(force){
 
 /* org modal */
 function openOrg(oid){const o=getOrg(oid);if(!o)return;openModal({kind:'org',oid,stars:0,text:'',anon:false})}
+function revMenu(key){
+  if(!S.isAdmin)return '';
+  const hid=!!S.hidden[key];
+  return `<span class="rmenu"><button class="rmb" data-rmenu title="Удирдлага">⋮</button><span class="rmpop"><button data-hide="${esc(key)}" data-hv="${hid?0:1}">${hid?'👁 Сэргээх':'🙈 Нуух'}</button><button class="dn" data-del="${esc(key)}">🗑 Устгах</button></span></span>`;
+}
 function starStr(n){return '★★★★★'.slice(0,n)+'☆☆☆☆☆'.slice(0,5-n)}
 function renderOrgModal(m){
   const o=getOrg(m.oid); if(!o){closeModal();return}
@@ -1115,7 +1139,7 @@ function renderOrgModal(m){
     <div class="sec"><h3>Иргэдийн сэтгэгдэл <span class="cnt">${revs.length}</span></h3>
       <div class="revs">${revs.length?revs.map(r=>{const k=r.key;const e=S.revReact[k]||{l:0,d:0};const my=rr[k];
         const nm=r.a?'Нэргүй иргэн':(r.uid===S.uid?'Та':(S.names[r.uid]||'Иргэн'));
-        return `<div class="rev"><div class="top"><b>${esc(nm)}</b><span class="st">${starStr(r.s)}</span><span>${dateStr(r.t)}</span>${S.isAdmin?`<span style="margin-left:auto;display:flex;gap:6px"><button class="rb sm" data-hide="${esc(k)}">Нуух</button><button class="rb sm dn" data-del="${esc(k)}">🗑 Устгах</button></span>`:''}</div>${r.x?`<p>${esc(r.x)}</p>`:'<div style="height:6px"></div>'}
+        return `<div class="rev"><div class="top"><b>${esc(nm)}</b><span class="st">${starStr(r.s)}</span><span>${dateStr(r.t)}</span>${revMenu(k)}</div>${r.x?`<p>${esc(r.x)}</p>`:'<div style="height:6px"></div>'}
         <div class="react"><button class="rb sm up ${my===1?'on':''}" data-rrx="${esc(k)}" data-v="1">👍 ${e.l}</button><button class="rb sm dn ${my===-1?'on':''}" data-rrx="${esc(k)}" data-v="-1">👎 ${e.d}</button></div></div>`}).join(''):'<div class="empty">Сэтгэгдэл алга. Анхных нь болоорой!</div>'}</div>
     </div>
     ${o.user&&S.isAdmin?`<button class="btn ghost" data-hideorg>Энэ байгууллагыг нуух (модерац)</button>`:''}
@@ -1157,10 +1181,13 @@ document.addEventListener('click',async e=>{
   const sv=e.target.closest('[data-ovsave]'); if(sv){e.preventDefault();e.stopPropagation();const [k,id]=sv.dataset.ovsave.split('|');const inp=document.getElementById('ov_'+k);const v=Math.round(+inp.value);
     if(inp.value===''||isNaN(v)||v<0||v>100){toast('0–100 хооронд тоо оруулна уу');return} await setOverride(k,id,v);return}
   const cl=e.target.closest('[data-ovclear]'); if(cl){e.preventDefault();e.stopPropagation();const [k,id]=cl.dataset.ovclear.split('|');await setOverride(k,id,null);return}
+  const mb=e.target.closest('[data-rmenu]'); if(mb){e.preventDefault();e.stopPropagation();const r=mb.parentElement;const was=r.classList.contains('open');document.querySelectorAll('.rmenu.open').forEach(x=>x.classList.remove('open'));if(!was)r.classList.add('open');return}
+  const hd=e.target.closest('[data-hide]'); if(hd){e.preventDefault();e.stopPropagation();await setHidden(hd.dataset.hide,hd.dataset.hv!=='0');toast(hd.dataset.hv!=='0'?'Сэтгэгдэл нуугдлаа':'Сэтгэгдэл сэргээгдлээ');return}
   const dl=e.target.closest('[data-del]'); if(dl){e.preventDefault();e.stopPropagation();
     if(dl.dataset.armed!=='1'){dl.dataset.armed='1';dl.textContent='Дахин дарж устгана уу';setTimeout(()=>{if(dl.isConnected){dl.dataset.armed='';dl.textContent='🗑 Устгах'}},3500);return}
     const k=dl.dataset.del;const i=k.indexOf('|');await adminDeleteReview(k.slice(0,i),k.slice(i+1));return}
 },true);
+document.addEventListener('click',e=>{if(!e.target.closest('.rmenu'))document.querySelectorAll('.rmenu.open').forEach(x=>x.classList.remove('open'))});
 /* letter flow (гомдол + талархал) */
 const CTYPES=['Үйлчилгээний чанар','Хүнд суртал, удаашрал','Албан хаагчийн ёс зүй','Авлига, хээл хахууль','Хууль бус шийдвэр','Төлбөр, мөнгөн асуудал','Мэдээлэл өгөхөөс татгалзсан','Бусад'];
 const TTYPES=['Сайн үйлчилгээ','Асуудлыг шуурхай шийдсэн','Эелдэг харилцаа','Тусламж дэмжлэг','Бусад'];
@@ -1300,7 +1327,7 @@ function renderFeed(){
   const all=[];for(const arr of Object.values(S.reviewsByOrg))for(const r of arr){const ra=r.oid.slice(0,r.oid.indexOf('.'));if(area==='MN'||isUnder(ra,area)||(ctrOf&&ra===ctrOf))all.push(r)}
   all.sort((a,b)=>b.t-a.t); const list=all.slice(0,40);
   resolveNames(list.filter(r=>!r.a).map(r=>r.uid));
-  const sig=area+'|'+list.map(r=>r.key+r.t+(S.names[r.uid]||'')).join(',');
+  const sig=area+'|'+(S.isAdmin?1:0)+'|'+list.map(r=>r.key+r.t+(S.names[r.uid]||'')).join(',');
   if(sig===feedSig)return; const areaChanged=!feedSig.startsWith(area+'|'); feedSig=sig;
   $('#feedTitle').textContent=feedTitle(area);
   $('#feedN').textContent=all.length?`· нийт ${all.length}`:'';
@@ -1311,7 +1338,7 @@ function renderFeed(){
   el.style.height='';
   const item=r=>{const o=getOrg(r.oid);const c=r.s>=4?'g':r.s===3?'m':'b';const nm=r.a?'Нэргүй иргэн':(r.uid===S.uid?'Та':(S.names[r.uid]||'Иргэн'));
     return `<div class="fi s${c}" data-org="${esc(r.oid)}"><div class="av">${esc(nm.slice(0,1))}</div><div class="bd">
-      <div class="o">${esc(o?o.name:r.oid)}</div>
+      <div class="o"><span class="ot">${esc(o?o.name:r.oid)}</span>${revMenu(r.key)}</div>
       <div class="m"><span class="st">${starStr(r.s)}</span> · ${esc(nm)} · ${dateStr(r.t)} · ${esc(o?nameOf(o.area):'')}</div>
       ${r.x?`<p>${esc(r.x)}</p>`:''}</div></div>`};
   const html=list.map(item).join('');
@@ -1457,11 +1484,12 @@ ${(S.anon||S.guest)?'':`      <div><b>Хувийн мэдээлэл</b><div clas
     </div>
    </div></div>`;
 }
-let adm={tab:'letters',k:'all',st:'all',open:null,q:''};
+let adm={tab:'letters',k:'all',st:'all',open:null,q:'',ovq:'',ovOpen:{}};
 function renderAdminPage(){
   const el=$('#pageAdmin');
   if(!S.isAdmin){el.innerHTML=`<div class="pg"><div class="pgh"><h1>Удирдлага</h1><button class="btn ghost" style="margin-left:auto" data-gomap>← Газрын зураг</button></div><div class="card box"><div class="empty">Энэ хуудас зөвхөн Шүүмж-ийн удирдлагад (хуудасны эзэмшигч, Editor эрхтэй хүн) нээгдэнэ.</div></div></div>`;return}
-  const ae=document.activeElement; if(ae&&ae.id==='admReply')return; // don't wipe reply typing
+  const ae=document.activeElement; if(ae&&(ae.id==='admReply'||(ae.dataset&&ae.dataset.ovinp!=null)))return; // don't wipe typing
+  const ovFocus=ae&&ae.id==='ovQ'; const ovPos=ovFocus?ae.selectionStart:0;
   const qFocus=ae&&ae.id==='admQ'; const qPos=qFocus?ae.selectionStart:0;
   const all=[];for(const [uid,items] of Object.entries(S.allComplaints))for(const c of Object.values(items||{}))all.push(Object.assign({uid},c));
   all.sort((a,b)=>b.t-a.t);
@@ -1472,11 +1500,25 @@ function renderAdminPage(){
   const list=all.filter(c=>(adm.k==='all'||kOf(c)===adm.k)&&(adm.st==='all'||cStatus(c)===adm.st)&&(!qq||String(c.code).toUpperCase().replace(/-/g,'').includes(qq)||String(c.phone||'').includes(qq)||String(c.name||'').toUpperCase().includes(qq)));
   let body='';
   if(adm.tab==='ov'){
-    const ra=Object.entries((S.ov&&S.ov.a)||{}), ro=Object.entries((S.ov&&S.ov.o)||{});
-    const row=(k,id,v,name,sub)=>`<div class="org" ><div class="nm"><b>${esc(name)}</b><small>${esc(sub)}</small></div><div class="meta"><div class="st" style="color:#fde68a">✎ ${v}%</div><div>бодит: ${(()=>{const sc=k==='a'?score(S.areaStats[id]):score(S.orgStats[id]);return sc==null?'—':Math.round(sc/5*100)+'%'})()}</div></div><button class="btn ghost" data-ovclear="${k}|${esc(id)}">Автомат</button></div>`;
-    body=`<div class="lvlnote">Аймаг, сум, дүүрэг, хорооны хувийг тухайн газрын хуудасны дээд хэсэгт, байгууллагынхыг байгууллагын цонхонд “⚙ Хувь тохируулах” талбараар өөрчилнө. Тохируулсан хувь нийтэд “✎ тохируулсан” тэмдэгтэй харагдана.</div>
-    <h3 style="font-size:13px;color:var(--tx2)">Бүс нутаг (${ra.length})</h3><div class="orgs">${ra.length?ra.map(([id,v])=>row('a',id,v,id==='MN'?'Монгол Улс':nameOf(id),TYPE_LBL[typeOf(id)]||'')).join(''):'<div class="empty">Тохируулсан бүс алга</div>'}</div>
-    <h3 style="font-size:13px;color:var(--tx2);margin-top:14px">Байгууллага (${ro.length})</h3><div class="orgs">${ro.length?ro.map(([id,v])=>{const o=getOrg(id);return o?row('o',id,v,o.name,nameOf(o.area)):''}).join(''):'<div class="empty">Тохируулсан байгууллага алга</div>'}</div>`;
+    const ro=Object.entries((S.ov&&S.ov.o)||{});
+    const q=(adm.ovq||'').trim().toLowerCase();
+    const realPct=id=>{const sc=score(S.areaStats[id]);return sc==null?'—':Math.round(sc/5*100)+'%'};
+    const line=(id,lvl)=>{const v=ovA(id);const kids=(KIDS[id]||[]).filter(k=>['soum','district','khoroo','capital','aimag','village'].includes(typeOf(k)));const open=adm.ovOpen&&adm.ovOpen[id];
+      const c=cls(aScore(id));
+      return `<div class="ovrow l${lvl}"><span class="exp">${kids.length&&!q?`<button data-ovexp="${esc(id)}">${open?'▾':'▸'}</button>`:''}</span><span class="dot d${c}"></span><span class="nm2">${esc(id==='MN'?'Монгол Улс':nameOf(id))} <small>${esc(TYPE_LBL[typeOf(id)]||'')}${isCentre(id)?' · ★ төв':''}</small></span>
+        <span class="real">бодит ${realPct(id)}</span>
+        <input class="in" type="number" min="0" max="100" data-ovinp="${esc(id)}" value="${v==null?'':v}" placeholder="авто"><span class="pc">%</span>
+        <button class="btn" data-ovset="${esc(id)}">✓</button>${v!=null?`<button class="btn ghost" data-ovclear="a|${esc(id)}" title="Автомат болгох">↺</button>`:'<span class="sp2"></span>'}</div>`
+        +(open&&!q?kids.slice().sort((a,b)=>(isCentre(b)-isCentre(a))||nameOf(a).localeCompare(nameOf(b),'mn',{numeric:true})).map(k=>line(k,lvl+1)).join(''):'');};
+    let tree;
+    if(q){const hits=Object.keys(U).filter(id=>['aimag','capital','soum','district','khoroo','village'].includes(typeOf(id))&&(nameOf(id).toLowerCase().includes(q)||(parentOf(id)&&nameOf(parentOf(id)).toLowerCase().includes(q)))).slice(0,120);
+      tree=hits.map(id=>line(id,typeOf(id)==='aimag'||typeOf(id)==='capital'?0:typeOf(id)==='khoroo'?2:1)).join('')||'<div class="empty">Олдсонгүй</div>';}
+    else tree=(KIDS.MN||[]).slice().sort((a,b)=>(a==='MN11'?-1:b==='MN11'?1:nameOf(a).localeCompare(nameOf(b),'mn'))).map(id=>line(id,0)).join('');
+    const nOv=Object.keys((S.ov&&S.ov.a)||{}).length;
+    body=`<div class="lvlnote">Аймаг, сум, дүүрэг, хороо бүрийн хувийг энд шууд тохируулна. Хоосон үлдээвэл иргэдийн үнэлгээгээр автоматаар тооцогдоно. Тохируулсан хувь нийтэд “✎ тохируулсан” тэмдэгтэй харагдана. ▸ дарж доод нэгжийг дэлгэнэ.</div>
+    <div class="admq"><input class="in" id="ovQ" placeholder="🔍 Аймаг, сум, дүүрэг, хороо хайх — ж: Улиастай" value="${esc(adm.ovq||'')}"><span class="pill" style="color:#ddd6fe;border-color:rgba(124,58,237,.6)">✎ ${nOv} тохируулсан</span></div>
+    <div class="ovtree">${tree}</div>
+    <h3 style="font-size:13px;color:var(--tx2);margin-top:16px">Тохируулсан байгууллага (${ro.length})</h3><div class="orgs">${ro.length?ro.map(([id,v])=>{const o=getOrg(id);return o?`<div class="org"><div class="nm"><b>${esc(o.name)}</b><small>${esc(nameOf(o.area))}</small></div><div class="meta"><div class="st" style="color:#fde68a">✎ ${v}%</div></div><button class="btn ghost" data-ovclear="o|${esc(id)}">Автомат</button></div>`:''}).join(''):'<div class="empty">Байгууллагын хувийг байгууллагын цонхонд “⚙ Хувь тохируулах” талбараар өөрчилнө.</div>'}</div>`;
   } else if(adm.tab==='letters'){
     const pend=all.filter(c=>cStatus(c)==='pending').length;
     body=`<div class="admq"><input class="in" id="admQ" placeholder="🔍 Нэхэмжлэхийн дугаар (банкны гүйлгээний утга), утас эсвэл нэрээр хайх — ж: SH482913" value="${esc(adm.q||'')}">${pend?`<span class="pill" style="color:#fde68a;border-color:rgba(251,191,36,.5);white-space:nowrap">⏳ ${pend} төлбөр хүлээгдэж байна</span>`:''}</div>
@@ -1512,6 +1554,8 @@ function renderAdminPage(){
       <div class="tabs" style="margin-bottom:14px"><button class="tab ${adm.tab==='letters'?'on':''}" data-atab="letters">📨 Захидлууд</button><button class="tab ${adm.tab==='reviews'?'on':''}" data-atab="reviews">💬 Сэтгэгдэл (модерац)</button><button class="tab ${adm.tab==='ov'?'on':''}" data-atab="ov">📊 Тохируулсан хувь</button><button class="tab ${adm.tab==='rank'?'on':''}" data-atab="rank">📉 Муу үнэлгээтэй байгууллага</button></div>
       ${body}
     </div></div>`;
+  const oq=$('#ovQ'); if(oq){oq.oninput=()=>{adm.ovq=oq.value;renderAdminPage()}; if(ovFocus){oq.focus();try{oq.setSelectionRange(ovPos,ovPos)}catch(e){}}}
+  el.querySelectorAll('[data-ovinp]').forEach(inp=>inp.onkeydown=ev=>{if(ev.key==='Enter'){const b=inp.parentElement.querySelector('[data-ovset]');if(b)b.click()}});
   const qi=$('#admQ'); if(qi){qi.oninput=()=>{adm.q=qi.value;renderAdminPage()}; if(qFocus){qi.focus();try{qi.setSelectionRange(qPos,qPos)}catch(e){}}}
   el.querySelectorAll('[data-ast2]').forEach(sel=>sel.onchange=()=>{const [uid,code]=sel.dataset.ast2.split('|');const patch={status:sel.value};if(sel.value==='sent')patch.sentT=Date.now();adminUpdate(uid,code,patch)});
 }
@@ -1527,6 +1571,10 @@ document.addEventListener('click',async e=>{
   const at=e.target.closest('[data-atab]'); if(at){adm.tab=at.dataset.atab;renderAdminPage();return}
   const ak=e.target.closest('[data-ak]'); if(ak){adm.k=ak.dataset.ak;renderAdminPage();return}
   const as=e.target.closest('[data-ast]'); if(as){adm.st=as.dataset.ast;renderAdminPage();return}
+  const ox=e.target.closest('[data-ovexp]'); if(ox){const id=ox.dataset.ovexp;adm.ovOpen[id]=!adm.ovOpen[id];renderAdminPage();return}
+  const os=e.target.closest('[data-ovset]'); if(os){const id=os.dataset.ovset;const inp=os.parentElement.querySelector('[data-ovinp]');const raw=inp.value.trim();
+    if(raw===''){inp.blur();await setOverride('a',id,null);renderAdminPage();return}
+    const v=Math.round(+raw);if(isNaN(v)||v<0||v>100){toast('0–100 хооронд тоо оруулна уу');return} inp.blur();await setOverride('a',id,v);renderAdminPage();return}
   const ap=e.target.closest('[data-apaid]'); if(ap){const [uid,code]=ap.dataset.apaid.split('|');ap.disabled=true;await adminUpdate(uid,code,{status:'paid',paidT:Date.now()});renderAdminPage();return}
   const ao=e.target.closest('[data-aopen]'); if(ao){adm.open=adm.open===ao.dataset.aopen?null:ao.dataset.aopen;renderAdminPage();return}
   const ah=e.target.closest('[data-ahide]'); if(ah){setHidden(ah.dataset.ahide,!S.hidden[ah.dataset.ahide]);return}
