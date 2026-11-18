@@ -1,0 +1,33 @@
+rules_version = '2';
+// Шүүмж — Cloud Firestore хамгаалалтын дүрэм.
+// Firebase Console → Firestore Database → Rules таб дээр энэ файлын агуулгыг бүтнээр нь хуулж "Publish" дарна.
+// ADMIN_EMAIL@example.com-г firebase-config.js дахь SHUUMJ_ADMINS-тай ижил болгоно.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn() && request.auth.token.email != null
+        && request.auth.token.email.lower() in ['admin_email@example.com'];
+    }
+    function own(uid) { return signedIn() && request.auth.uid == uid; }
+    function small() { return request.resource.size() < 200000; }
+
+    // Үнэлгээ, лайк/дислайк, иргэдийн нэмсэн байгууллага: хүн бүр уншина, зөвхөн өөрийнхөө баримтыг бичнэ.
+    match /reviews/{uid}   { allow read: if true; allow write: if (own(uid) && small()) || isAdmin(); }
+    match /reactions/{uid} { allow read: if true; allow write: if (own(uid) && small()) || isAdmin(); }
+    match /orgs/{uid}      { allow read: if true; allow write: if (own(uid) && small()) || isAdmin(); }
+
+    // Сэтгэгдэлд харагдах нэр
+    match /profiles/{uid}  { allow read: if true; allow write: if own(uid) && small(); }
+
+    // Гомдол, талархлын захидал: зөвхөн эзэн нь болон удирдлага
+    match /complaints/{uid} { allow read, write: if own(uid) || isAdmin(); }
+
+    // Хувийн мэдээлэл (утас, хаяг): зөвхөн эзэн нь
+    match /data/users/{uid}/{rest=**} { allow read, write: if own(uid); }
+
+    // Модерац, илгээгдсэн захидлын мэдээний мөр: хүн бүр уншина, зөвхөн удирдлага бичнэ
+    match /meta/{docId} { allow read: if true; allow write: if isAdmin(); }
+  }
+}
