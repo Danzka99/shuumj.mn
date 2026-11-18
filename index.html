@@ -378,7 +378,7 @@ footer{color:var(--tx3);font-size:11.5px;padding:10px 0 30px;border-top:1px soli
       <div class="tip" id="tip"></div>
     </div>
     <div class="card feed">
-      <h3><span class="live"></span> Шинэ сэтгэгдлүүд <span class="cnt" id="feedN" style="color:var(--tx3);font-weight:500"></span><span class="fnav"><button id="fUp" title="Дээш">▲</button><button id="fDn" title="Доош">▼</button></span></h3>
+      <h3><span class="live"></span> <span id="feedTitle">Шинэ сэтгэгдлүүд</span> <span class="cnt" id="feedN" style="color:var(--tx3);font-weight:500"></span><span class="fnav"><button id="fUp" title="Дээш">▲</button><button id="fDn" title="Доош">▼</button></span></h3>
       <div class="fwin" id="feed"></div>
     </div>
    </div>
@@ -887,7 +887,7 @@ function go(id,opts){
   if(!U[id]&&id!=='MN')return;
   current=id; hideTip();
   if(S.page==='map'&&location.hash.slice(1)!==id){try{history.replaceState(null,'','#'+id)}catch(e){location.hash=id}}
-  renderCrumbs(); drawMap(); renderPanel();
+  renderCrumbs(); drawMap(); renderPanel(); if(typeof renderFeed==='function')renderFeed();
   if(window.innerWidth<980&&!(opts&&opts.noscroll)){/* keep map visible on mobile */}
 }
 function renderCrumbs(){
@@ -1194,14 +1194,25 @@ async function complaintClick(e,m){
 
 /* live comments feed under the map */
 let feedSig='';
+function feedTitle(id){
+  if(!id||id==='MN')return 'Шинэ сэтгэгдлүүд';
+  const t=typeOf(id);
+  if(t==='capital')return nameOf(id)+' хотын сэтгэгдлүүд';
+  if(t==='soum'&&isCentre(id)&&CTR[CTR_SOUM[id]][1]!==nameOf(id))return nameOf(id)+' сумын ('+CTR[CTR_SOUM[id]][1]+' хот) сэтгэгдлүүд';
+  return gen(id)+' сэтгэгдлүүд';
+}
 function renderFeed(){
-  const all=[];for(const arr of Object.values(S.reviewsByOrg))for(const r of arr)all.push(r);
+  const area=current||'MN';
+  const all=[];for(const arr of Object.values(S.reviewsByOrg))for(const r of arr){if(area==='MN'||isUnder(r.oid.slice(0,r.oid.indexOf('.')),area))all.push(r)}
   all.sort((a,b)=>b.t-a.t); const list=all.slice(0,40);
   resolveNames(list.filter(r=>!r.a).map(r=>r.uid));
-  const sig=list.map(r=>r.key+r.t+(S.names[r.uid]||'')).join(',');
-  if(sig===feedSig)return; feedSig=sig;
+  const sig=area+'|'+list.map(r=>r.key+r.t+(S.names[r.uid]||'')).join(',');
+  if(sig===feedSig)return; const areaChanged=!feedSig.startsWith(area+'|'); feedSig=sig;
+  $('#feedTitle').textContent=feedTitle(area);
   $('#feedN').textContent=all.length?`· нийт ${all.length}`:'';
   const el=$('#feed');
+  if(areaChanged)el.scrollTop=0;
+  if(!list.length&&area!=='MN'){el.innerHTML=`<div class="empty">${esc(feedTitle(area).replace(/ сэтгэгдлүүд$/,''))} байгууллагуудад одоогоор сэтгэгдэл алга. Баруун талын жагсаалтаас байгууллагаа сонгоод анхны сэтгэгдлээ үлдээгээрэй.</div>`;el.style.height='auto';$('#feedN').textContent='';return}
   if(!list.length){el.innerHTML='<div class="empty">Одоогоор сэтгэгдэл алга. Газрын зураг дээрээс байгууллагаа сонгоод анхны сэтгэгдлээ үлдээгээрэй.</div>';el.style.height='auto';return}
   el.style.height='';
   const item=r=>{const o=getOrg(r.oid);const c=r.s>=4?'g':r.s===3?'m':'b';const nm=r.a?'Нэргүй иргэн':(r.uid===S.uid?'Та':(S.names[r.uid]||'Иргэн'));
