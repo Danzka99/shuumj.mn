@@ -207,6 +207,23 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .mprog{display:flex;gap:3px}.mprog i{width:16px;height:4px;border-radius:2px;background:var(--line2)}.mprog i.on{background:var(--good)}
 .btn.mini{padding:5px 10px;font-size:12px;border-radius:8px}
 .btn.mini.pay{background:#16a34a;border-color:#16a34a}
+.hot{padding:12px 14px;border-color:rgba(249,115,22,.4);background:linear-gradient(180deg,rgba(249,115,22,.08),var(--panel) 60%)}
+.hoth{display:flex;align-items:center;gap:8px;margin-bottom:10px;min-width:0}
+.hoth .fire{font-size:18px;animation:flick 1.4s ease-in-out infinite}
+@keyframes flick{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.15) rotate(3deg)}}
+.hoth .ht{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#fdba74;white-space:nowrap}
+.hoth .hotorg{background:none;border:none;padding:0;font-weight:700;font-size:13.5px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;text-align:left}
+.hoth .hotorg:hover{text-decoration:underline}
+.hoth .hotn{margin-left:auto;font-size:12px;color:var(--tx3);white-space:nowrap}
+.hotrail{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;cursor:grab;mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
+.hotrail::-webkit-scrollbar{display:none}.hotrail.drag{cursor:grabbing;user-select:none}
+.hrun{display:inline-flex;gap:10px;padding:2px 0}
+.hc{width:280px;flex:none;padding:10px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);border-top:3px solid var(--none);display:flex;flex-direction:column;gap:6px}
+.hc.sg{border-top-color:var(--good)}.hc.sm{border-top-color:var(--mid)}.hc.sb{border-top-color:var(--bad)}
+.hc .hm{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--tx3)}.hc .hm .st{color:#fbbf24;letter-spacing:1px}
+.hc .hn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hc p{margin:0;font-size:13px;color:var(--tx2);white-space:normal;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:3.9em}
+.frx{margin-top:6px}.rxb{display:inline-flex;gap:6px}
 .lvlnote{font-size:12px;color:var(--tx3);margin:-4px 0 10px}
 .tab.privt{border-color:rgba(167,139,250,.55);color:#ddd6fe}
 .tab.privt.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
@@ -422,6 +439,10 @@ footer{color:var(--tx3);font-size:11.5px;padding:10px 0 30px;border-top:1px soli
         <span style="color:#fde68a">★ Аймгийн төв</span>
       </div>
       <div class="tip" id="tip"></div>
+    </div>
+    <div class="card hot" id="hotCard" style="display:none">
+      <div class="hoth"><span class="fire">🔥</span><span class="ht">Халуухан сэдэв</span><button class="hotorg" id="hotOrg"></button><span class="hotn" id="hotN"></span></div>
+      <div class="hotrail" id="hotRail"></div>
     </div>
     <div class="card feed">
       <h3><span class="live"></span> <span id="feedTitle">Шинэ сэтгэгдлүүд</span> <span class="cnt" id="feedN" style="color:var(--tx3);font-weight:500"></span><span class="fnav"><button id="fUp" title="Дээш">▲</button><button id="fDn" title="Доош">▼</button></span></h3>
@@ -998,7 +1019,7 @@ function go(id,opts){
   if(!U[id]&&id!=='MN')return;
   current=id; hideTip();
   if(S.page==='map'&&location.hash.slice(1)!==id){try{history.replaceState(null,'','#'+id)}catch(e){location.hash=id}}
-  renderCrumbs(); drawMap(); renderPanel(); if(typeof renderFeed==='function')renderFeed();
+  renderCrumbs(); drawMap(); renderPanel(); if(typeof renderFeed==='function'){renderFeed();renderHot()}
   if(window.innerWidth<980&&!(opts&&opts.noscroll)){/* keep map visible on mobile */}
 }
 function renderCrumbs(){
@@ -1099,7 +1120,7 @@ document.addEventListener('click',e=>{
     addOrg(current,n,c,true,ad).then(id=>{if(id)openOrg(id)})}
 });
 let refreshT=null;
-function refresh(){ if(refreshT)return; refreshT=requestAnimationFrame(()=>{refreshT=null;recompute();renderPanel();drawMap(false);refreshModal();renderFeed();renderPages()}) }
+function refresh(){ if(refreshT)return; refreshT=requestAnimationFrame(()=>{refreshT=null;recompute();renderPanel();drawMap(false);refreshModal();renderFeed();renderHot();renderPages()}) }
 
 /* ---------- modal ---------- */
 const ov=$('#ov'),modal=$('#modal'); let modalState=null;
@@ -1119,6 +1140,11 @@ function refreshModal(force){
 
 /* org modal */
 function openOrg(oid){const o=getOrg(oid);if(!o)return;openModal({kind:'org',oid,stars:0,text:'',anon:false})}
+function rxBtns(key){
+  const e=S.revReact[key]||{l:0,d:0}; const my=((S.reacts[S.uid]||{}).r||{})[key];
+  return `<span class="rxb"><button class="rb sm up ${my===1?'on':''}" data-rrx="${esc(key)}" data-v="1" title="Таалагдсан">👍 ${e.l}</button><button class="rb sm dn ${my===-1?'on':''}" data-rrx="${esc(key)}" data-v="-1" title="Таалагдаагүй">👎 ${e.d}</button></span>`;
+}
+function rxSig(key){const e=S.revReact[key]||{l:0,d:0};const my=((S.reacts[S.uid]||{}).r||{})[key]||0;return e.l+'/'+e.d+'/'+my}
 function revMenu(key){
   if(!S.isAdmin)return '';
   const hid=!!S.hidden[key];
@@ -1215,6 +1241,7 @@ document.addEventListener('click',async e=>{
     const k=dl.dataset.del;const i=k.indexOf('|');await adminDeleteReview(k.slice(0,i),k.slice(i+1));return}
 },true);
 document.addEventListener('click',e=>{if(!e.target.closest('.rmenu'))document.querySelectorAll('.rmenu.open').forEach(x=>x.classList.remove('open'))});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-rrx]');if(!b)return;e.preventDefault();e.stopPropagation();react('r',b.dataset.rrx,+b.dataset.v)},true);
 /* letter flow (гомдол + талархал) */
 const CTYPES=['Үйлчилгээний чанар','Хүнд суртал, удаашрал','Албан хаагчийн ёс зүй','Авлига, хээл хахууль','Хууль бус шийдвэр','Төлбөр, мөнгөн асуудал','Мэдээлэл өгөхөөс татгалзсан','Бусад'];
 const TTYPES=['Сайн үйлчилгээ','Асуудлыг шуурхай шийдсэн','Эелдэг харилцаа','Тусламж дэмжлэг','Бусад'];
@@ -1364,7 +1391,7 @@ function renderFeed(){
   const all=[];for(const arr of Object.values(S.reviewsByOrg))for(const r of arr){const ra=r.oid.slice(0,r.oid.indexOf('.'));if(area==='MN'||isUnder(ra,area)||(ctrOf&&ra===ctrOf))all.push(r)}
   all.sort((a,b)=>b.t-a.t); const list=all.slice(0,40);
   resolveNames(list.filter(r=>!r.a).map(r=>r.uid));
-  const sig=area+'|'+(S.isAdmin?1:0)+'|'+list.map(r=>r.key+r.t+(S.names[r.uid]||'')).join(',');
+  const sig=area+'|'+(S.isAdmin?1:0)+'|'+list.map(r=>r.key+r.t+(S.names[r.uid]||'')+rxSig(r.key)).join(',');
   if(sig===feedSig)return; const areaChanged=!feedSig.startsWith(area+'|'); feedSig=sig;
   $('#feedTitle').textContent=feedTitle(area);
   $('#feedN').textContent=all.length?`· нийт ${all.length}`:'';
@@ -1377,10 +1404,36 @@ function renderFeed(){
     return `<div class="fi s${c}" data-org="${esc(r.oid)}"><div class="av">${esc(nm.slice(0,1))}</div><div class="bd">
       <div class="o"><span class="ot">${esc(o?o.name:r.oid)}</span>${revMenu(r.key)}</div>
       <div class="m"><span class="st">${starStr(r.s)}</span> · ${esc(nm)} · ${dateStr(r.t)} · ${esc(o?nameOf(o.area):'')}</div>
-      ${r.x?`<p>${esc(r.x)}</p>`:''}</div></div>`};
+      ${r.x?`<p>${esc(r.x)}</p>`:''}<div class="frx">${rxBtns(r.key)}</div></div></div>`};
   const html=list.map(item).join('');
   const keep=el.scrollTop; el.innerHTML=`<div class="ftrack">${html}</div>`; el.scrollTop=keep;
 }
+
+/* 🔥 hot topic: organisation with the most comments in the current area */
+let hotSig='';
+function renderHot(){
+  const area=current||'MN'; const ctrOf=isCentre(area)?CTR_SOUM[area]:null;
+  const by={};
+  for(const [oid,arr] of Object.entries(S.reviewsByOrg)){const ra=oid.slice(0,oid.indexOf('.'));
+    if(area==='MN'||isUnder(ra,area)||(ctrOf&&ra===ctrOf))by[oid]=arr;}
+  let best=null;for(const [oid,arr] of Object.entries(by)){if(!best||arr.length>best[1].length||(arr.length===best[1].length&&arr[0].t>best[1][0].t))best=[oid,arr]}
+  const card=$('#hotCard');
+  if(!best||!getOrg(best[0])){card.style.display='none';hotSig='';return}
+  const [oid,arr]=best; const o=getOrg(oid); const list=arr.slice(0,20);
+  resolveNames(list.filter(r=>!r.a).map(r=>r.uid));
+  const sig=area+'|'+oid+'|'+(S.isAdmin?1:0)+'|'+list.map(r=>r.key+r.t+(S.names[r.uid]||'')+rxSig(r.key)).join(',');
+  if(sig===hotSig)return; const sameOrg=hotSig.split('|')[1]===oid; hotSig=sig;
+  card.style.display='';
+  const sc=oScore(oid),c=cls(sc);
+  $('#hotOrg').innerHTML=`${orgIcon(o)}${esc(o.name)}`; $('#hotOrg').dataset.org=oid;
+  $('#hotN').innerHTML=`${arr.length} сэтгэгдэл${sc==null?'':` · <span style="color:${CLR[c]}">${Math.round(sc/5*100)}%</span>`}`;
+  const item=r=>{const nm=r.a?'Нэргүй иргэн':(r.uid===S.uid?'Та':(S.names[r.uid]||'Иргэн'));const cc=r.s>=4?'g':r.s===3?'m':'b';
+    return `<div class="hc s${cc}"><div class="hm"><span class="st">${starStr(r.s)}</span><span class="hn">${esc(nm)} · ${dateStr(r.t)}</span>${revMenu(r.key)}</div><p>${r.x?esc(r.x):'<i style="color:var(--tx3)">Зөвхөн од өгсөн</i>'}</p><div class="frx">${rxBtns(r.key)}</div></div>`};
+  const html=list.map(item).join('');
+  const rail=$('#hotRail'); const keep=sameOrg?rail.scrollLeft:0;
+  rail.innerHTML=`<div class="hrun">${html}${list.length>=3?html:''}</div>`; rail._loop=list.length>=3; rail.scrollLeft=keep; rail._pos=keep;
+}
+document.getElementById('hotOrg').addEventListener('click',e=>{const id=e.currentTarget.dataset.org;if(id)openOrg(id)});
 
 /* news ticker: one line, талархал + гомдол mixed, names shown one by one */
 const TK_DEMO=[['MN81.ne','t'],['MN11.usug','c'],['MN1101.zdtg','t'],['MN46.cg','c'],['MN11.ugt1','t'],['MN1110.ndh','c'],['MN65.th','c'],['MN8101.emt','t'],['MN11.103','t'],['MN1125.ubh','c']];
@@ -1424,6 +1477,22 @@ function dragScroll(el,axis){
   el.addEventListener('mouseenter',()=>{el._hover=true});el.addEventListener('mouseleave',()=>{el._hover=false});
 }
 dragScroll($('#feed'),'y');
+dragScroll($('#hotRail'),'x');
+$('#hotRail').addEventListener('touchstart',()=>{$('#hotRail')._hold=true},{passive:true});
+$('#hotRail').addEventListener('touchend',()=>{setTimeout(()=>{$('#hotRail')._hold=false},2500)},{passive:true});
+(function hotLoop(){
+  let last=performance.now();
+  function step(now){
+    const dt=Math.min(64,now-last);last=now;
+    const r=document.getElementById('hotRail');
+    if(r&&r._loop&&S.page==='map'){
+      if(!r._hold&&!r._hover){r._pos=(r._pos==null?r.scrollLeft:r._pos)+dt*0.035;r.scrollLeft=r._pos}else r._pos=r.scrollLeft;
+      const half=r.scrollWidth/2; if(half>0&&r.scrollLeft>=half){r.scrollLeft-=half;r._pos=r.scrollLeft}
+    }
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+})();
 $('#fUp').onclick=()=>{const f=$('#feed');f.scrollTop-=f.clientHeight*0.8};
 $('#fDn').onclick=()=>{const f=$('#feed');f.scrollTop+=f.clientHeight*0.8};
 /* slow auto-scroll for the best / worst ranking */
@@ -1691,7 +1760,7 @@ async function boot(){
     initMap(topo);
   }catch(e){$('#mapLoading').textContent='Газрын зургийн өгөгдөл ачаалж чадсангүй.';console.error(e);return}
   recompute();
-  const h=location.hash.slice(1); if(h==='me'||h==='admin')S.page=h; go(U[h]?h:'MN',{noscroll:true}); route(); renderFeed(); renderTicker();
+  const h=location.hash.slice(1); if(h==='me'||h==='admin')S.page=h; go(U[h]?h:'MN',{noscroll:true}); route(); renderFeed(); renderHot(); renderTicker();
   initDb();
 }
 renderBanner();
