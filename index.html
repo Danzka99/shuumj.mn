@@ -194,6 +194,8 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 @media (max-width:640px){.lsteps{grid-template-columns:1fr}}
 .rvh{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .rvh .free{font-size:12px;font-weight:800;color:#86efac;border:1px solid rgba(34,197,94,.5);background:rgba(34,197,94,.1);border-radius:999px;padding:3px 10px;white-space:nowrap}
+.claimbtn{width:100%;margin-top:10px;padding:12px;font-size:14px;background:#16a34a!important;border-color:#16a34a!important;font-weight:700}
+.claimed{margin-top:10px;font-size:13px;color:#bbf7d0;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.4);border-radius:10px;padding:10px 12px}
 .lvlnote{font-size:12px;color:var(--tx3);margin:-4px 0 10px}
 .tab.privt{border-color:rgba(167,139,250,.55);color:#ddd6fe}
 .tab.privt.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
@@ -1262,6 +1264,14 @@ function newInvoice(k){
   let c; do{ c=(k==='t'?'TH':'SH')+String(Math.floor(100000+Math.random()*900000)); }while(mine.has(c));
   return c;
 }
+async function claimPaid(code){
+  const c=S.myComplaints[code]; if(!c)return;
+  const t=Date.now(); const nc=Object.assign({},c,{claimT:t}); S.myComplaints=Object.assign({},S.myComplaints,{[code]:nc});
+  if(modalState&&modalState.kind==='complaint'&&modalState.c&&modalState.c.code===code){modalState.c=nc;modalState.fresh=false;renderComplaint(modalState)}
+  renderPages();
+  try{ if(S.db)await updateDoc('complaints/'+S.uid,{items:{[code]:{claimT:t}}}); toast('Хүсэлт илгээгдлээ. Баярлалаа!') }catch(e){}
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-claim]');if(!b)return;e.preventDefault();e.stopPropagation();b.disabled=true;claimPaid(b.dataset.claim)},true);
 function payBox(c,compact){
   const B=window.SHUUMJ_BANK||{}; const ok=B.account&&!/PASTE|ДАНС/.test(B.account);
   const row=(l,v,copy)=>`<div class="pr"><span>${l}</span><b>${esc(v)}</b>${copy?`<button class="cp" data-copytxt="${esc(v)}" title="Хуулах">⧉</button>`:''}</div>`;
@@ -1271,6 +1281,8 @@ function payBox(c,compact){
     <div class="pr hl"><span>Гүйлгээний утга</span><b>${esc(c.code)}</b><button class="cp" data-copytxt="${esc(c.code)}" title="Хуулах">⧉</button></div>
     ${compact?'':`<div class="note" style="margin-top:6px">⚠ Гүйлгээний утгад <b style="color:#fde68a">${esc(c.code)}</b> дугаарыг заавал бичнэ үү. Энэ дугаараар таны төлбөрийг танина. Төлбөр орсныг ажлын цагаар 24 цагийн дотор баталгаажуулна.</div>`}`
     :`<div class="note">Дансны мэдээлэл удахгүй нэмэгдэнэ. Таны нэхэмжлэхийн дугаар: <b style="color:#fde68a">${esc(c.code)}</b></div>`}
+    ${c.claimT?`<div class="claimed">✅ Таны хүсэлт илгээгдсэн (${dateStr(c.claimT)}). Төлбөрийг шалгаж баталгаажуулмагц албан бичгийг байгууллагад хүргүүлнэ.</div>`
+      :`<button class="btn claimbtn" data-claim="${esc(c.code)}">📨 Төлбөр шилжүүлсэн — хүсэлт илгээх</button><div class="note" style="text-align:center">Төлбөрөө шилжүүлсний дараа энэ товчийг дарна уу.</div>`}
   </div>`;
 }
 function renderComplaint(m){
@@ -1297,7 +1309,7 @@ function renderComplaint(m){
     const c=m.c; const s=cStatus(c);
     body=`${m.fresh?`<div class="banner">✅ Таны ${thx?'талархал':'гомдол'} бүртгэгдлээ. Доорх данс руу төлбөрөө шилжүүлнэ үү. Явцыг “Миний хуудас”-аас хянана.</div>`:''}
     ${s==='pending'?payBox(c):''}
-    <div class="row" style="justify-content:space-between"><div><div class="note">Код</div><div style="font-size:22px;font-weight:800">${esc(c.code)}</div></div><div style="text-align:right"><div class="note">Төлөв</div><b>${esc(statLbl(s))}</b></div></div>
+    <div class="row" style="justify-content:space-between"><div><div class="note">Код</div><div style="font-size:22px;font-weight:800">${esc(c.code)}</div></div><div style="text-align:right"><div class="note">Төлөв</div><b>${esc(s==='pending'&&c.claimT?'Төлбөр шалгагдаж байна':statLbl(s))}</b></div></div>
     ${trackHtml(c)}
     ${c.reply&&c.reply.x?`<div><label class="lb">Байгууллагын хариу · ${dateStr(c.reply.t)}</label><div class="reply">${esc(c.reply.x)}</div></div>`:''}
     <div><label class="lb">Албан бичиг</label><div class="letter">${esc(letterText(c,o))}</div></div>
@@ -1538,7 +1550,7 @@ function renderAdminPage(){
     body=`<div class="admq"><input class="in" id="admQ" placeholder="🔍 Нэхэмжлэхийн дугаар (банкны гүйлгээний утга), утас эсвэл нэрээр хайх — ж: SH482913" value="${esc(adm.q||'')}">${pend?`<span class="pill" style="color:#fde68a;border-color:rgba(251,191,36,.5);white-space:nowrap">⏳ ${pend} төлбөр хүлээгдэж байна</span>`:''}</div>
     <div class="tabs" style="flex-wrap:wrap;margin-bottom:8px">${[['all','Бүгд'],['c','Гомдол'],['t','Талархал']].map(([k,l])=>`<button class="tab ${adm.k===k?'on':''}" data-ak="${k}">${l}</button>`).join('')}<span style="width:12px"></span>${[['all','Бүх төлөв']].concat(STAT).map(([k,l])=>`<button class="tab ${adm.st===k?'on':''}" data-ast="${k}">${l}</button>`).join('')}</div>
     ${list.length?`<div style="overflow:auto"><table class="adm"><tr><th>Код / Огноо</th><th>Төрөл</th><th>Байгууллага</th><th>Иргэн</th><th>Гарчиг</th><th>Төлөв</th><th></th></tr>
-    ${list.map(c=>{const o=getOrg(c.o);const id=c.uid+'|'+c.code;return `<tr><td><b>${esc(c.code)}</b><br><span class="note">${dateStr(c.t)}</span></td><td><span class="pill ${kOf(c)==='t'?'kt':'kc'}">${KLBL[kOf(c)]}</span></td><td>${esc(o?o.name:c.o)}</td><td>${esc(c.name)}<br><span class="note">${esc(c.phone)} ${esc(c.email||'')}</span></td><td><b>${esc(c.subj)}</b><br><span class="note">${esc(c.type)}</span></td>
+    ${list.map(c=>{const o=getOrg(c.o);const id=c.uid+'|'+c.code;return `<tr><td><b>${esc(c.code)}</b><br><span class="note">${dateStr(c.t)}</span>${cStatus(c)==='pending'&&c.claimT?`<br><span class="pill" style="color:#86efac;border-color:rgba(34,197,94,.5);margin-top:4px">💸 Төлсөн гэж мэдэгдсэн</span>`:''}</td><td><span class="pill ${kOf(c)==='t'?'kt':'kc'}">${KLBL[kOf(c)]}</span></td><td>${esc(o?o.name:c.o)}</td><td>${esc(c.name)}<br><span class="note">${esc(c.phone)} ${esc(c.email||'')}</span></td><td><b>${esc(c.subj)}</b><br><span class="note">${esc(c.type)}</span></td>
     <td><select class="in" data-ast2="${esc(id)}" style="min-width:170px">${STAT.map(([k,l])=>`<option value="${k}" ${cStatus(c)===k?'selected':''}>${l}</option>`).join('')}</select>${cStatus(c)==='pending'?`<button class="btn" data-apaid="${esc(id)}" style="margin-top:6px;width:100%;background:#16a34a;border-color:#16a34a;padding:7px 10px">✅ ${fmt(FEE)}₮ орсон — баталгаажуулах</button>`:''}</td>
     <td><button class="btn ghost" data-aopen="${esc(id)}">${adm.open===id?'Хаах':'Нээх'}</button></td></tr>
     ${adm.open===id?`<tr><td colspan="7"><div class="grid2" style="align-items:start"><div class="letter" style="font-size:13px">${esc(letterText(c,o))}</div>
