@@ -11,15 +11,14 @@ service cloud.firestore {
         && request.auth.token.email.lower() in ['wildhaskap@gmail.com'];
     }
     function own(uid) { return signedIn() && request.auth.uid == uid; }
-    function small() { return request.resource.size() < 200000; }
 
     // Үнэлгээ, лайк/дислайк, иргэдийн нэмсэн байгууллага: хүн бүр уншина, зөвхөн өөрийнхөө баримтыг бичнэ.
-    match /reviews/{uid}   { allow read: if true; allow write: if (own(uid) && small()) || isAdmin(); }
-    match /reactions/{uid} { allow read: if true; allow write: if (own(uid) && small()) || isAdmin(); }
-    match /orgs/{uid}      { allow read: if true; allow write: if (own(uid) && small()) || isAdmin(); }
+    match /reviews/{uid}   { allow read: if true; allow write: if (own(uid)) || isAdmin(); }
+    match /reactions/{uid} { allow read: if true; allow write: if (own(uid)) || isAdmin(); }
+    match /orgs/{uid}      { allow read: if true; allow write: if (own(uid)) || isAdmin(); }
 
     // Сэтгэгдэлд харагдах нэр
-    match /profiles/{uid}  { allow read: if true; allow write: if own(uid) && small(); }
+    match /profiles/{uid}  { allow read: if true; allow write: if own(uid); }
 
     // Гомдол, талархлын захидал: зөвхөн эзэн нь болон удирдлага
     match /complaints/{uid} { allow read, write: if own(uid) || isAdmin(); }
