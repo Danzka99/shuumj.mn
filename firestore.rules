@@ -11,6 +11,8 @@ service cloud.firestore {
         && request.auth.token.email.lower() in ['wildhaskap@gmail.com'];
     }
     function own(uid) { return signedIn() && request.auth.uid == uid; }
+    // жинхэнэ (Google / и-мэйл) бүртгэл — нэргүй зочин биш
+    function real() { return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous'; }
 
     // Үнэлгээ, лайк/дислайк, иргэдийн нэмсэн байгууллага: хүн бүр уншина, зөвхөн өөрийнхөө баримтыг бичнэ.
     match /reviews/{uid}   { allow read: if true; allow write: if (own(uid)) || isAdmin(); }
@@ -18,13 +20,13 @@ service cloud.firestore {
     match /orgs/{uid}      { allow read: if true; allow write: if (own(uid)) || isAdmin(); }
 
     // Сэтгэгдэлд харагдах нэр
-    match /profiles/{uid}  { allow read: if true; allow write: if own(uid); }
+    match /profiles/{uid}  { allow read: if true; allow write: if own(uid) && real(); }
 
-    // Гомдол, талархлын захидал: зөвхөн эзэн нь болон удирдлага
-    match /complaints/{uid} { allow read, write: if own(uid) || isAdmin(); }
+    // Гомдол, талархлын захидал: зөвхөн нэвтэрсэн эзэн нь болон удирдлага
+    match /complaints/{uid} { allow read, write: if (own(uid) && real()) || isAdmin(); }
 
     // Хувийн мэдээлэл (утас, хаяг): зөвхөн эзэн нь
-    match /data/users/{uid}/{rest=**} { allow read, write: if own(uid); }
+    match /data/users/{uid}/{rest=**} { allow read, write: if own(uid) && real(); }
 
     // Модерац, илгээгдсэн захидлын мэдээний мөр: хүн бүр уншина, зөвхөн удирдлага бичнэ
     match /meta/{docId} { allow read: if true; allow write: if isAdmin(); }

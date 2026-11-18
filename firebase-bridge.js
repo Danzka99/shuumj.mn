@@ -6,7 +6,8 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile,
-  sendPasswordResetEmail, signOut
+  sendPasswordResetEmail, signOut, signInAnonymously, linkWithPopup, linkWithCredential,
+  EmailAuthProvider, signInWithCredential
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   getFirestore, doc, collection, getDoc, getDocs, setDoc, deleteDoc, onSnapshot
@@ -18,7 +19,15 @@ const auth = getAuth(app);
 const fs = getFirestore(app);
 const ADMINS = (window.SHUUMJ_ADMINS || []).map(e => String(e).toLowerCase());
 
-const authReady = new Promise(res => { const off = onAuthStateChanged(auth, u => { off(); res(u); }); });
+// Everyone gets a silent anonymous account, so reviews work without signing in.
+// Letters (complaints / thanks) still require a real Google or e-mail account.
+const authReady = new Promise(res => {
+  const off = onAuthStateChanged(auth, async u => {
+    off();
+    if (u) return res(u);
+    try { const r = await signInAnonymously(auth); res(r.user); } catch (e) { res(null); } // Anonymous provider off → read-only guest
+  });
+});
 const isAdmin = u => !!(u && u.email && ADMINS.includes(u.email.toLowerCase()));
 
 const toErr = e => ({ code: e && e.code === 'permission-denied' ? 'invalid_argument' : 'unavailable', message: String((e && e.message) || e) });
@@ -57,6 +66,7 @@ const user = {
   isOwner: async () => isAdmin(await authReady),
   canEdit: async () => isAdmin(await authReady),
   can: async () => !!(await authReady),
+  isGuest: async () => { const u = await authReady; return !!(u && u.isAnonymous); },
   me: async () => { const u = await authReady; return { name: u ? (u.displayName || '') : '' }; },
   profiles: async ids => {
     const out = {};
@@ -70,16 +80,30 @@ const user = {
 
 // public display name, so reviews can show who wrote them (never the e-mail)
 async function publishProfile(u) {
-  if (!u) return;
+  if (!u || u.isAnonymous) return;
   try { await setDoc(doc(fs, 'profiles/' + u.uid), { name: (u.displayName || '').slice(0, 60) }, { merge: true }); } catch (e) {}
 }
 authReady.then(publishProfile);
 
 window.SHUUMJ_AUTH = {
-  google: async () => { const r = await signInWithPopup(auth, new GoogleAuthProvider()); await publishProfile(r.user); },
+  google: async () => {
+    const p = new GoogleAuthProvider(); const cur = auth.currentUser; let r;
+    if (cur && cur.isAnonymous) {
+      // keep the guest's reviews: upgrade the anonymous account in place when possible
+      try { r = await linkWithPopup(cur, p); }
+      catch (e) {
+        const cred = GoogleAuthProvider.credentialFromError(e);
+        if (cred) r = await signInWithCredential(auth, cred); else throw e;
+      }
+    } else r = await signInWithPopup(auth, p);
+    await publishProfile(r.user);
+  },
   login: (email, pw) => signInWithEmailAndPassword(auth, email, pw),
   signup: async (name, email, pw) => {
-    const r = await createUserWithEmailAndPassword(auth, email, pw);
+    const cur = auth.currentUser;
+    const r = (cur && cur.isAnonymous)
+      ? await linkWithCredential(cur, EmailAuthProvider.credential(email, pw))
+      : await createUserWithEmailAndPassword(auth, email, pw);
     await updateProfile(r.user, { displayName: name });
     await publishProfile(r.user);
   },

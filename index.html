@@ -163,6 +163,8 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .admq{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}.admq .in{flex:1;min-width:260px}
 .oved{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px dashed rgba(124,58,237,.6);background:rgba(124,58,237,.08);border-radius:12px;font-size:12.5px;color:#ddd6fe}
 .oved .in{width:84px;padding:6px 8px}.oved .btn{padding:6px 12px}
+.rulebox{font-size:12.5px;line-height:1.5;color:#fecaca;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);border-radius:10px;padding:10px 12px}
+.rulebox b{color:#fff}
 .lvlnote{font-size:12px;color:var(--tx3);margin:-4px 0 10px}
 .tab.privt{border-color:rgba(167,139,250,.55);color:#ddd6fe}
 .tab.privt.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
@@ -437,18 +439,64 @@ function gen(id){ // genitive prefix
 /* ---------- organisation templates ---------- */
 const T={
  country:[
-  ['ndeg','Нийгмийн даатгалын ерөнхий газар','Нийгмийн даатгал'],
-  ['ceg','Цагдаагийн ерөнхий газар','Цагдаа'],
-  ['teg','Татварын ерөнхий газар','Татвар'],
-  ['ubeg','Улсын бүртгэлийн ерөнхий газар','Бүртгэл'],
-  ['geg','Гаалийн ерөнхий газар','Гааль'],
-  ['obeg','Онцгой байдлын ерөнхий газар','Онцгой байдал'],
-  ['emdeg','Эрүүл мэндийн даатгалын ерөнхий газар','Эрүүл мэнд'],
-  ['hhueg','Хөдөлмөр, халамжийн үйлчилгээний ерөнхий газар','Халамж'],
-  ['ihsh','Иргэний харьяалал, шилжилт хөдөлгөөний ерөнхий газар','Шилжилт хөдөлгөөн'],
+  ['ezhy','Эдийн засаг, хөгжлийн яам','Яам'],
+  ['ghy','Гадаад харилцааны яам','Яам'],
+  ['sy','Сангийн яам','Яам'],
+  ['hzdhy','Хууль зүй, дотоод хэргийн яам','Яам'],
+  ['bhy','Батлан хамгаалах яам','Яам'],
+  ['bouaoy','Байгаль орчин, уур амьсгалын өөрчлөлтийн яам','Яам'],
+  ['by','Боловсролын яам','Яам'],
+  ['emy','Эрүүл мэндийн яам','Яам'],
+  ['gbhnhy','Гэр бүл, хөдөлмөр, нийгмийн хамгааллын яам','Яам'],
+  ['hbboy','Хот байгуулалт, барилга, орон сууцжуулалтын яам','Яам'],
+  ['zthy','Зам, тээврийн хөгжлийн яам','Яам'],
+  ['hhaahuy','Хүнс, хөдөө аж ахуй, хөнгөн үйлдвэрийн яам','Яам'],
+  ['auiby','Аж үйлдвэр, эрдэс баялгийн яам','Яам'],
+  ['ssajzy','Соёл, спорт, аялал жуулчлал, залуучуудын яам','Яам'],
+  ['tshihhy','Цахим хөгжил, инновац, харилцаа холбооны яам','Яам'],
+  ['ehy','Эрчим хүчний яам','Яам'],
+  ['ndeg','Нийгмийн даатгалын ерөнхий газар','Агентлаг'],
+  ['emdeg','Эрүүл мэндийн даатгалын ерөнхий газар','Агентлаг'],
+  ['hhueg','Хөдөлмөр, халамжийн үйлчилгээний ерөнхий газар','Агентлаг'],
+  ['ceg','Цагдаагийн ерөнхий газар','Агентлаг'],
+  ['teg','Татварын ерөнхий газар','Агентлаг'],
+  ['geg','Гаалийн ерөнхий газар','Агентлаг'],
+  ['ubeg','Улсын бүртгэлийн ерөнхий газар','Агентлаг'],
+  ['ihsh','Иргэний харьяалал, шилжилт хөдөлгөөний ерөнхий газар','Агентлаг'],
+  ['obeg','Онцгой байдлын ерөнхий газар','Агентлаг'],
+  ['shshgeg','Шүүхийн шийдвэр гүйцэтгэх ерөнхий газар','Агентлаг'],
+  ['hhaeg','Хил хамгаалах ерөнхий газар','Агентлаг'],
+  ['gzbg','Газар зохион байгуулалт, геодези, зураг зүйн газар','Агентлаг'],
+  ['ineg','Иргэний нисэхийн ерөнхий газар','Агентлаг'],
+  ['cuoshg','Цаг уур, орчны шинжилгээний газар','Агентлаг'],
+  ['shuhtg','Шударга өрсөлдөөн, хэрэглэгчийн төлөө газар','Агентлаг'],
+  ['ooog','Оюуны өмчийн газар','Агентлаг'],
+  ['shhg','Стандарт, хэмжил зүйн газар','Агентлаг'],
+  ['eag','Ерөнхий архивын газар','Агентлаг'],
+  ['ush','Үндэсний статистикийн хороо','Агентлаг'],
+  ['szh','Санхүүгийн зохицуулах хороо','Агентлаг'],
+  ['hhzh','Харилцаа холбооны зохицуулах хороо','Агентлаг'],
+  ['erm','Эрчим хүчний зохицуулах хороо','Агентлаг'],
+  ['tag','Төрийн албаны зөвлөл','Агентлаг'],
+  ['uag','Үндэсний аудитын газар','Агентлаг'],
+  ['seh','Сонгуулийн ерөнхий хороо','Агентлаг'],
   ['atg','Авлигатай тэмцэх газар','Хууль хяналт'],
   ['huek','Хүний эрхийн Үндэсний Комисс','Хууль хяналт'],
-  ['emon','E-Mongolia — төрийн цахим үйлчилгээ','Цахим үйлчилгээ']
+  ['mb','Монголбанк','Банк, санхүү'],
+  ['emon','E-Mongolia — төрийн цахим үйлчилгээ','Цахим үйлчилгээ'],
+  ['ubtz','Улаанбаатар төмөр зам ХНН','Төрийн өмчит компани'],
+  ['mtz','Монголын төмөр зам ТӨХК','Төрийн өмчит компани'],
+  ['miat','МИАТ ХК (Монголын иргэний агаарын тээвэр)','Төрийн өмчит компани'],
+  ['chhonb','Чингис хаан олон улсын нисэх буудал ТӨХК','Төрийн өмчит компани'],
+  ['msh','Монгол шуудан ХК','Төрийн өмчит компани'],
+  ['mch','Монголын цахилгаан холбоо ХК','Төрийн өмчит компани'],
+  ['ucdc','Үндэсний цахилгаан дамжуулах сүлжээ ТӨХК','Төрийн өмчит компани'],
+  ['erdm','Эрдэнэс Монгол ХХК','Төрийн өмчит компани'],
+  ['ett','Эрдэнэс Таван толгой ХК','Төрийн өмчит компани'],
+  ['erdu','Эрдэнэт үйлдвэр ТӨҮГ','Төрийн өмчит компани'],
+  ['tb','Төрийн банк','Төрийн өмчит компани'],
+  ['hb','Хөгжлийн банк','Төрийн өмчит компани'],
+  ['monrtv','Монголын үндэсний олон нийтийн радио, телевиз','Төрийн өмчит компани']
  ],
  capital:[
   ['mayor','Нийслэлийн Засаг дарга, Улаанбаатар хотын Захирагч','Засаг захиргаа'],
@@ -548,9 +596,10 @@ const T={
   ['zdtg',' Засаг даргын Тамгын газар','Засаг захиргаа']
  ]
 };
-const CATS=['Сургууль','Цэцэрлэг','Эмнэлэг','Засаг захиргаа','Цагдаа','Нийгмийн даатгал','Эрүүл мэнд','Боловсрол','Татвар','Бүртгэл','Халамж','Онцгой байдал','Нийтийн аж ахуй','Тээвэр','Банк, санхүү','Харилцаа холбоо','Хувийн компани','Бусад'];
+const CATS=['Сургууль','Цэцэрлэг','Эмнэлэг','Яам','Агентлаг','Төрийн өмчит компани','Засаг захиргаа','Цагдаа','Нийгмийн даатгал','Эрүүл мэнд','Боловсрол','Татвар','Бүртгэл','Халамж','Онцгой байдал','Нийтийн аж ахуй','Тээвэр','Банк, санхүү','Харилцаа холбоо','Хувийн компани','Бусад'];
 /* which higher-level organisation each unit belongs to (soum police → aimag police, …) */
 const PARENT={
+ country:{ndeg:'gbhnhy',hhueg:'gbhnhy',emdeg:'emy',ceg:'hzdhy',ubeg:'hzdhy',ihsh:'hzdhy',shshgeg:'hzdhy',teg:'sy',geg:'sy',gzbg:'hbboy',ineg:'zthy',cuoshg:'bouaoy',erm:'ehy',ucdc:'ehy',ubtz:'zthy',mtz:'zthy',miat:'zthy',chhonb:'zthy',msh:'tshihhy',mch:'tshihhy',hhzh:'tshihhy',emon:'tshihhy',erdm:'auiby',ett:'auiby',erdu:'auiby',ooog:'ezhy',shhg:'ezhy'},
  aimag:{cg:'ceg',ndh:'ndeg',th:'teg',ubh:'ubeg',obg:'obeg',emdh:'emdeg',hhg:'hhueg'},
  capital:{cg:'ceg',ndg:'ndeg',tg:'teg',ubg:'ubeg',obg:'obeg',hhg:'hhueg'},
  soum:{ch:'cg',ndh:'ndh',ub:'ubh',emt:'emg',ebs:'bg',cec:'bg',mal:'hhaa',zdtg:'zdtg'},
@@ -563,7 +612,7 @@ const PARENT={
 function tkey(area){const t=typeOf(area)||(area==='MN'?'country':'');return (t==='soum'&&typeof CTR_SOUM!=='undefined'&&CTR_SOUM[area])?'ctrsoum':t}
 function tmplOrgs(area){
   const t=typeOf(area)||(area==='MN'?'country':''); const k=tkey(area); const list=T[k]||[]; const g=gen(area);
-  const pa=area==='MN'?null:(parentOf(area)||null); const pm=PARENT[k]||{};
+  const pa=area==='MN'?'MN':(parentOf(area)||null); const pm=PARENT[k]||{};
   return list.map(([s,n,c])=>({id:area+'.'+s,area,name:(t==='country'||t==='capital')?n:(g+n),cat:c,user:false,parent:(pm[s]&&pa)?pa+'.'+pm[s]:null,lvl:t}));
 }
 function orgsOf(area){
@@ -600,7 +649,7 @@ function recompute(){
       const key=uid+'|'+oid; if(S.hidden[key]||S.hidden[oid])continue;
       const s=Math.max(1,Math.min(5,Math.round(+r.s||0))); if(!s)continue;
       const o=st(oid);o.n++;o.s+=s;o.dist[s-1]++;
-      (rbo[oid]||(rbo[oid]=[])).push({uid,oid,key,s,x:String(r.x||'').slice(0,3000),t:+r.t||0,a:!!r.a});
+      (rbo[oid]||(rbo[oid]=[])).push({uid,oid,key,s,x:String(r.x||'').slice(0,3000),t:+r.t||0,a:!r.n});
     }
   }
   for(const [uid,rx] of Object.entries(S.reacts)){
@@ -650,9 +699,9 @@ function needWrite(){
   if(!S.canWrite){toast('Танд бичих эрх алга (Contributor эрх шаардлагатай).');return false}
   return true;
 }
-async function saveReview(oid,s,x,a){
+async function saveReview(oid,s,x,show){
   if(!needWrite())return false;
-  const mine=Object.assign({},myReviews()); mine[oid]={s,x,t:Date.now(),a:!!a};
+  const mine=Object.assign({},myReviews()); mine[oid]={s,x,t:Date.now()};if(show)mine[oid].n=true;
   S.reviews[S.uid]=mine; refresh();
   try{await writeDoc('reviews/'+S.uid,{items:mine});return true}catch(e){return false}
 }
@@ -670,7 +719,7 @@ async function react(kind,key,v){
 const PRIV_CATS=['Кафе','Ресторан','Дэлгүүр','Супермаркет','Эмийн сан','Хувийн эмнэлэг','Шүдний эмнэлэг','Хувийн сургууль','Хувийн цэцэрлэг','Банк','Шатахуун түгээх станц','Зочид буудал','Үсчин, гоо сайхан','Авто засвар','Фитнес, спорт','Хүргэлт','Үйлчилгээ','Хувийн компани','Бусад хувийн'];
 const isPriv=o=>!!(o&&o.user&&(o.priv||PRIV_CATS.includes(o.cat)));
 const PRIV_ICON={'Кафе':'☕','Ресторан':'🍽','Дэлгүүр':'🛒','Супермаркет':'🛒','Эмийн сан':'💊','Хувийн эмнэлэг':'🏥','Шүдний эмнэлэг':'🦷','Хувийн сургууль':'🏫','Хувийн цэцэрлэг':'🧸','Банк':'🏦','Шатахуун түгээх станц':'⛽','Зочид буудал':'🏨','Үсчин, гоо сайхан':'💇','Авто засвар':'🔧','Фитнес, спорт':'🏋','Хүргэлт':'🚚'};
-const orgIcon=o=>isPriv(o)?(PRIV_ICON[o.cat]||'🏪')+' ':o.cat==='Сургууль'?'🏫 ':o.cat==='Цэцэрлэг'?'🧸 ':o.cat==='Эмнэлэг'?'🏥 ':'';
+const orgIcon=o=>isPriv(o)?(PRIV_ICON[o.cat]||'🏪')+' ':o.cat==='Сургууль'?'🏫 ':o.cat==='Цэцэрлэг'?'🧸 ':o.cat==='Эмнэлэг'?'🏥 ':o.cat==='Яам'?'🏛 ':o.cat==='Агентлаг'?'🏢 ':o.cat==='Төрийн өмчит компани'?'🏭 ':'';
 function rebuildAdded(){
   const out={};
   for(const [uid,items] of Object.entries(S.addedRaw))for(const [id,o] of Object.entries(items||{})){
@@ -743,6 +792,7 @@ async function initDb(){
     try{const ce=await user.canEdit();S.isAdmin=!!ce}catch(e){}
     try{const cw=await user.can('data.write');if(cw===false)S.canWrite=false}catch(e){}
     try{const ow=await user.isOwner();if(ow)S.isAdmin=true}catch(e){}
+    try{if(user.isGuest)S.guest=!!(await user.isGuest())}catch(e){}
   }
   if(!db){renderBanner();return}
   if(S.uid==='local'){ if(!window.SHUUMJ_AUTH){renderBanner();return} S.anon=true; S.canWrite=false; }
@@ -756,15 +806,15 @@ async function initDb(){
   db.doc('meta/override').onSnapshot(d=>{const v=(d.exists&&d.data())||{};S.ov={a:v.a||{},o:v.o||{}};refresh()},onErr);
   db.doc('meta/hidden').onSnapshot(d=>{S.hidden=(d.exists&&d.data().h)||{};rebuildAdded();refresh()},onErr);
   db.doc('meta/complaintStatus').onSnapshot(d=>{S.status=(d.exists&&d.data().s)||{};refreshModal()},onErr);
-  if(!S.anon)db.doc('complaints/'+S.uid).onSnapshot(d=>{S.myDocExists=d.exists;S.myComplaints=(d.exists&&d.data().items)||{};refreshModal();renderPages()},onErr);
+  if(!S.anon&&!S.guest)db.doc('complaints/'+S.uid).onSnapshot(d=>{S.myDocExists=d.exists;S.myComplaints=(d.exists&&d.data().items)||{};refreshModal();renderPages()},onErr);
   db.doc('meta/sent').onSnapshot(d=>{S.sent=(d.exists&&d.data().s)||{};renderTicker()},onErr);
-  if(!S.anon)db.doc('data/users/'+S.uid+'/profile').onSnapshot(d=>{if(d.exists){S.profile=d.data()||{};renderPages()}},()=>{});
+  if(!S.anon&&!S.guest)db.doc('data/users/'+S.uid+'/profile').onSnapshot(d=>{if(d.exists){S.profile=d.data()||{};renderPages()}},()=>{});
   if(S.isAdmin){
     $('#admBtn').style.display='';
     db.collection('complaints').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data();o[d.id]=(v&&v.items)||{}});S.allComplaints=o;renderPages()},()=>{});
   }
   if(user&&user.me){try{const me=await user.me();S.meName=(me&&me.name)||''}catch(e){}}
-  $('#myLbl').textContent=S.anon?'Нэвтрэх':(S.meName||'Миний хуудас');
+  $('#myLbl').textContent=(S.anon||S.guest)?'Нэвтрэх':(S.meName||'Миний хуудас');
   renderPages();
   renderBanner();
 }
@@ -772,12 +822,13 @@ function renderBanner(){
   const el=$('#modeBanner');
   if(!S.live){el.innerHTML='<div class="banner warn" style="margin-bottom:14px">Туршилтын горим: өгөгдлийн сан хараахан холбогдоогүй байна. Таны үнэлгээ зөвхөн энэ браузерт түр хадгалагдана. Удахгүй бүх хэрэглэгчийн үнэлгээ нэг дор харагдана.</div>';return}
   if(S.anon){el.innerHTML='<div class="banner" style="margin-bottom:14px">Үнэлгээ, сэтгэгдэл бичих, гомдол илгээхийн тулд <a href="#me" style="color:#fff;font-weight:700">нэвтэрнэ үү →</a> Нэвтрэхгүйгээр бүх үнэлгээг үзэж болно.</div>';return}
+  if(S.guest){el.innerHTML='<div class="banner" style="margin-bottom:14px">💬 Сэтгэгдэл, од үлдээхэд нэвтрэх шаардлагагүй, таны нэр нууцлагдана. Гомдол, талархал илгээх бол <a href="#me" style="color:#fff;font-weight:700">нэвтэрнэ үү →</a></div>';return}
   if(S.slow){el.innerHTML='<div class="banner warn" style="margin-bottom:14px">Өгөгдөл ачааллаж удаж байна — харагдаж буй мэдээлэл хуучирсан байж магадгүй.</div>';return}
   if(!S.canWrite){el.innerHTML='<div class="banner" style="margin-bottom:14px">Та үзэх эрхтэй байна. Үнэлгээ бичих, гомдол илгээхийн тулд хуудасны эзэмшигчээс Contributor эрх аваарай.</div>';return}
   el.innerHTML='';
 }
 
-/* aimag centres (НСО / Wikidata via mongolmaps): aimag -> [centre soum, town name, lon, lat] */
+/* aimag centres (ҮСХ / Wikidata via mongolmaps): aimag -> [centre soum, town name, lon, lat] */
 const CTR={"MN11":[null,"Улаанбаатар",106.9176,47.9187],"MN21":["MN2101","Чойбалсан",114.5228,48.0706],"MN22":["MN2201","Баруун-Урт",113.2792,46.6806],"MN23":["MN2301","Чингис",110.6617,47.3239],"MN41":["MN4101","Зуунмод",106.9528,47.7069],"MN42":["MN4201","Чойр",108.3651,46.3592],"MN43":["MN4301","Сүхбаатар",106.2064,50.2364],"MN44":["MN4401","Сайншанд",110.1367,44.8917],"MN45":["MN4501","Дархан",105.9228,49.4867],"MN46":["MN4601","Даланзадгад",104.4258,43.57],"MN48":["MN4801","Мандалговь",106.2708,45.7667],"MN61":["MN6101","Эрдэнэт",104.0444,49.0278],"MN62":["MN6201","Арвайхээр",102.7575,46.2689],"MN63":["MN6301","Булган",103.5347,48.8125],"MN64":["MN6401","Баянхонгор",100.7178,46.1917],"MN65":["MN6501","Цэцэрлэг",101.4503,47.4769],"MN67":["MN6701","Мөрөн",100.1614,49.6375],"MN81":["MN8101","Улиастай",96.8433,47.7428],"MN82":["MN8201","Алтай",96.2572,46.3728],"MN83":["MN8301","Өлгий",89.9632,48.9656],"MN84":["MN8401","Ховд",91.6464,48.0067],"MN85":["MN8501","Улаангом",92.086,50.3653]};
 const CTR_SOUM={}; for(const [a,v] of Object.entries(CTR)) if(v[0]) CTR_SOUM[v[0]]=a;
 const isCentre=id=>!!CTR_SOUM[id];
@@ -969,9 +1020,9 @@ function renderPanel(){
     kidsHtml=`<div class="sec"><h3>${esc(KIDS_LBL[t]||'Доод нэгж')} <span class="cnt">${kids.length}</span></h3>${t==='aimag'?'<div class="lvlnote">Сум бүрийн жижиг нэгжүүд (сумын цагдаагийн хэсэг, эрүүл мэндийн төв…) аймгийн байгууллагын харьяанд ажилладаг.</div>':''}<div class="chips">${sorted.map(k=>{const c=cls(aScore(k));return isCentre(k)?`<button class="chip ctr" data-go="${esc(k)}" title="Аймгийн төв"><span class="dot d${c}"></span>★ ${esc(nameOf(k))}${CTR[CTR_SOUM[k]][1]!==nameOf(k)?' ('+esc(CTR[CTR_SOUM[k]][1])+')':''} · аймгийн төв</button>`:`<button class="chip" data-go="${esc(k)}"><span class="dot d${c}"></span>${esc(nameOf(k))}</button>`}).join('')}</div></div>`;
   }
   const allOrgs=orgsOf(id);
-  const FL=[['all','Бүгд'],['Сургууль','🏫 Сургууль'],['Цэцэрлэг','🧸 Цэцэрлэг'],['Эмнэлэг','🏥 Эмнэлэг'],['priv','🏪 Хувийн байгууллага']];
-  if(!FL.some(f=>f[0]===orgFilter))orgFilter='all';
+  const FL=[['all','Бүгд'],['Яам','🏛 Яам'],['Агентлаг','🏢 Агентлаг'],['Төрийн өмчит компани','🏭 Төрийн өмчит компани'],['Сургууль','🏫 Сургууль'],['Цэцэрлэг','🧸 Цэцэрлэг'],['Эмнэлэг','🏥 Эмнэлэг'],['priv','🏪 Хувийн байгууллага']];
   const fOk=(o,k)=>k==='all'||(k==='priv'?isPriv(o):(!isPriv(o)&&o.cat===k));
+  if(!FL.some(f=>f[0]===orgFilter)||(orgFilter!=='all'&&orgFilter!=='priv'&&!allOrgs.some(o=>fOk(o,orgFilter))))orgFilter='all';
   const orgs=allOrgs.filter(o=>fOk(o,orgFilter)).map(o=>({o,c:cnt(S.orgStats[o.id])}));
   const fchips=`<div class="tabs" style="flex-wrap:wrap;margin-bottom:10px">${FL.map(([k,l])=>{const n=allOrgs.filter(o=>fOk(o,k)).length;return (n||k==='all'||k==='priv')?`<button class="tab ${orgFilter===k?'on':''}${k==='priv'?' privt':''}" data-ofl="${esc(k)}">${l} <span style="opacity:.7">${n}</span></button>`:''}).join('')}</div>${orgFilter==='priv'?`<div class="privbox"><b>🏪 Хувийн байгууллага нэмээд сэтгэгдэл үлдээх</b><div class="note">Кафе, дэлгүүр, эмийн сан, банк, үсчин… Нэрийг нь бичээд шууд үнэлгээ өгнө. Нэмсэн байгууллагыг бусад хүмүүс хайлтаар олж болно.</div>
     <div class="privrow"><input class="in" id="pvName" maxlength="160" placeholder="Нэр, жишээ нь: Номин супермаркет, Cafe Bene"><input class="in" id="pvAddr" maxlength="200" placeholder="📍 Байршил, жишээ нь: 3-р хороолол, 15-р байрны 1 давхарт, Их тойруугийн хажууд"><select class="in" id="pvCat">${PRIV_CATS.map(c=>`<option>${c}</option>`).join('')}</select><button class="btn" data-addpriv>＋ Нэмээд үнэлэх</button></div></div>`:''}`;
@@ -1021,6 +1072,7 @@ function refreshModal(force){
   if(m.kind==='org')renderOrgModal(m);
   else if(m.kind==='complaint')renderComplaint(m);
   else if(m.kind==='addorg')renderAddOrg(m);
+  else if(m.kind==='loginreq')renderLoginReq(m);
 }
 
 /* org modal */
@@ -1030,7 +1082,7 @@ function renderOrgModal(m){
   const o=getOrg(m.oid); if(!o){closeModal();return}
   const st=S.orgStats[o.id]; const revs=S.reviewsByOrg[o.id]||[];
   const mine=(S.reviews[S.uid]||{})[o.id];
-  if(!m.init){m.init=true;if(mine){m.stars=mine.s;m.text=mine.x||'';m.anon=!!mine.a}}
+  if(!m.init){m.init=true;if(mine){m.stars=mine.s;m.text=mine.x||'';m.show=!!mine.n}}
   const myR=(S.reacts[S.uid]||{o:{}}).o||{}; const mv=myR[o.id];
   const tot=st?st.n:0;
   const dist=[5,4,3,2,1].map(s=>{const n=st?st.dist[s-1]:0;return `<div class="r">${s}★<div class="bar"><i style="width:${tot?n/tot*100:0}%"></i></div><span style="width:22px;text-align:right">${n}</span></div>`}).join('');
@@ -1051,11 +1103,13 @@ function renderOrgModal(m){
       <button class="cbtn" data-complain="c"><span style="font-size:24px">📨</span><span><b>Албан гомдол илгээх</b><br><span class="note" style="color:#fecaca">Албан бичиг болгон хүргүүлж, хариуг хянана</span></span><span class="p">20,000₮</span></button>
       <button class="cbtn thx" data-complain="t"><span style="font-size:24px">🙏</span><span><b>Талархал илгээх</b><br><span class="note" style="color:#bbf7d0">Сайн ажилласан албан хаагчдад талархлаа хүргүүлнэ</span></span><span class="p">20,000₮</span></button>
     </div>
+    <div class="note" style="margin-top:-8px">🔒 Гомдол, талархал илгээхэд нэвтрэх шаардлагатай. Таны хувийн мэдээлэл хэнд ч харагдахгүй тул санаа зоволтгүй.</div>
     <div class="form">
+      <div class="rulebox">⚠️ <b>Хувь хүн, албан байгууллагыг гүтгэсэн, худал мэдээлэл бичихийг хатуу хориглоно.</b> Бид эерэг, бүтээлч шүүмжлэлээр дамжуулан илүү цэгцтэй үйлчилгээ авахыг эрмэлздэг. Алдаа дутагдлыг үнэн зөв, шударгаар хэлэх нь эрүүл нийгмийн үндэс юм. Дүрэм зөрчсөн сэтгэгдлийг устгана.</div>
       <b>${mine?'Миний үнэлгээг засах':'Үнэлгээ өгөх'}</b>
       <div class="stars" id="stars">${[1,2,3,4,5].map(i=>`<button data-star="${i}" class="${i<=m.stars?'on':''}" aria-label="${i} од">★</button>`).join('')}<span class="note" style="align-self:center;margin-left:8px">${['Од сонгоно уу','Маш муу','Муу','Дунд','Сайн','Маш сайн'][m.stars]}</span></div>
       <textarea id="revText" rows="3" maxlength="3000" placeholder="Үйлчилгээ ямар байсан бэ? Хүлээлгэсэн хугацаа, харилцаа, асуудал шийдсэн эсэх…">${esc(m.text)}</textarea>
-      <label class="chk"><input type="checkbox" id="anon" ${m.anon?'checked':''}> Нэрээ нуух (“Нэргүй иргэн” гэж харагдана)</label>
+      ${S.guest||S.anon?`<div class="note">🕶 Таны сэтгэгдэл <b>“Нэргүй иргэн”</b> нэрээр нийтлэгдэнэ. Нэрээ харуулахыг хүсвэл <a href="#me" data-gome2>нэвтэрнэ үү</a>.</div>`:`<label class="chk"><input type="checkbox" id="showName" ${m.show?'checked':''}> Нэрээ харуулах <span class="note">(сонгоогүй бол “Нэргүй иргэн” гэж харагдана)</span></label>`}
       <div style="display:flex;gap:8px;justify-content:flex-end">${mine?'<button class="btn ghost" data-delrev>Устгах</button>':''}<button class="btn" data-saverev ${m.stars?'':'disabled'}>Нийтлэх</button></div>
     </div>
     <div class="sec"><h3>Иргэдийн сэтгэгдэл <span class="cnt">${revs.length}</span></h3>
@@ -1067,7 +1121,7 @@ function renderOrgModal(m){
     ${o.user&&S.isAdmin?`<button class="btn ghost" data-hideorg>Энэ байгууллагыг нуух (модерац)</button>`:''}
   </div>`;
   const ta=$('#revText'); ta.addEventListener('input',()=>{m.text=ta.value;m.editing=true}); ta.addEventListener('blur',()=>{m.editing=false});
-  $('#anon').onchange=e=>{m.anon=e.target.checked};
+  {const sn=$('#showName'); if(sn)sn.onchange=e=>{m.show=e.target.checked};}
 }
 modal.addEventListener('click',async e=>{
   const m=modalState; if(!m)return;
@@ -1079,13 +1133,16 @@ modal.addEventListener('click',async e=>{
     const rx=e.target.closest('[data-rx]'); if(rx){react('o',m.oid,+rx.dataset.rx);return}
     const rrx=e.target.closest('[data-rrx]'); if(rrx){react('r',rrx.dataset.rrx,+rrx.dataset.v);return}
     if(e.target.closest('[data-saverev]')){m.text=$('#revText').value;m.editing=false;if(!m.stars)return;
-      const ok=await saveReview(m.oid,m.stars,m.text.trim(),m.anon);if(ok!==false)toast('Үнэлгээ нийтлэгдлээ. Баярлалаа!');return}
+      const ok=await saveReview(m.oid,m.stars,m.text.trim(),!(S.guest||S.anon)&&m.show);if(ok!==false)toast('Үнэлгээ нийтлэгдлээ. Баярлалаа!');return}
     if(e.target.closest('[data-delrev]')){m.stars=0;m.text='';m.init=true;deleteReview(m.oid);return}
     const hd=e.target.closest('[data-hide]'); if(hd){setHidden(hd.dataset.hide,true);return}
     if(e.target.closest('[data-hideorg]')){setHidden(m.oid,true);closeModal();return}
-    const cb=e.target.closest('[data-complain]'); if(cb){const k=cb.dataset.complain;const pr=S.profile||{};openModal({kind:'complaint',k,oid:m.oid,step:1,f:{name:pr.name||'',phone:pr.phone||'',email:pr.email||'',type:k==='t'?'Сайн үйлчилгээ':'Үйлчилгээний чанар',staff:'',subj:'',body:'',ok:false}});return}
+    const cb=e.target.closest('[data-complain]'); if(cb&&(S.guest||S.anon)&&S.live){openModal({kind:'loginreq',k:cb.dataset.complain,oid:m.oid});return}
+    if(cb){const k=cb.dataset.complain;const pr=S.profile||{};openModal({kind:'complaint',k,oid:m.oid,step:1,f:{name:pr.name||'',phone:pr.phone||'',email:pr.email||'',type:k==='t'?'Сайн үйлчилгээ':'Үйлчилгээний чанар',staff:'',subj:'',body:'',ok:false}});return}
   }
   if(m.kind==='complaint')complaintClick(e,m);
+  if(m.kind==='loginreq'&&e.target.closest('[data-loginpage]')){closeModal();location.hash='me';return}
+  if(e.target.closest('[data-gome2]')){e.preventDefault();closeModal();location.hash='me';return}
   const aok=e.target.closest('[data-aokind]'); if(m.kind==='addorg'&&aok){m.name=$('#aoName').value;m.priv=aok.dataset.aokind==='1';renderAddOrg(m);$('#aoName').value=m.name||'';return}
   if(m.kind==='addorg'&&e.target.closest('[data-saveorg]')){
     const n=$('#aoName').value.trim(),c=$('#aoCat').value; if(n.length<3){toast('Байгууллагын нэрээ бичнэ үү');return}
@@ -1322,7 +1379,7 @@ $('#fDn').onclick=()=>{const f=$('#feed');f.scrollTop+=f.clientHeight*0.8};
 /* stand-alone (Vercel + Firebase) sign-in */
 let auMode='login';
 function authCard(){
-  if(!S.anon)return `<div class="lt"><div class="note">Та нэвтэрсэн байна.</div><button class="btn ghost" data-au="logout">Гарах</button></div>`;
+  if(!S.anon&&!S.guest)return `<div class="lt"><div class="note">Та нэвтэрсэн байна.</div><button class="btn ghost" data-au="logout">Гарах</button></div>`;
   return `<div class="lt" style="gap:10px"><b style="font-size:16px">${auMode==='signup'?'Бүртгүүлэх':'Нэвтрэх'}</b>
     <button class="btn" data-au="google" style="background:#fff;color:#111;border-color:#fff">G&nbsp; Google-ээр нэвтрэх</button>
     <div class="note" style="text-align:center">эсвэл и-мэйлээр</div>
@@ -1360,7 +1417,7 @@ function letterCard(c,admin){
 }
 function renderMe(){
   const el=$('#pageMe'); {const ae=document.activeElement; if(ae&&el.contains(ae)&&/INPUT|TEXTAREA/.test(ae.tagName))return;}
-  const signed=S.uid!=='local'&&S.live; const pr=S.profile||{};
+  const signed=S.uid!=='local'&&S.live&&!S.guest; const pr=S.profile||{};
   const letters=Object.values(S.myComplaints).sort((a,b)=>b.t-a.t);
   const myRev=Object.entries(S.reviews[S.uid]||{}).map(([oid,r])=>({oid,...r})).sort((a,b)=>b.t-a.t);
   const nm=pr.name||S.meName||'Зочин';
@@ -1374,7 +1431,7 @@ function renderMe(){
         <div><div style="font-size:18px;font-weight:700">${esc(nm)}</div><div class="note">${signed?'✅ Нэвтэрсэн':'Нэвтрээгүй'}${S.isAdmin?' · Удирдлага':''}</div></div></div>
       ${window.SHUUMJ_AUTH?authCard():''}
       ${signed||window.SHUUMJ_AUTH?'':`<div class="banner warn">Шүүмж-д <b>Claude бүртгэлээрээ</b> нэвтэрнэ. Энэ хуудсыг claude.ai дээр нэвтэрсэн үедээ нээвэл таны үнэлгээ, захидал хадгалагдаж, бусад хэрэглэгчидтэй хуваалцагдана. Одоогоор таны мэдээлэл зөвхөн энэ цонхонд түр хадгалагдана.</div>`}
-${S.anon?'':`      <div><b>Хувийн мэдээлэл</b><div class="note">Гомдол, талархал илгээхэд автоматаар бөглөгдөнө. Зөвхөн танд харагдана.</div></div>
+${(S.anon||S.guest)?'':`      <div><b>Хувийн мэдээлэл</b><div class="note">Гомдол, талархал илгээхэд автоматаар бөглөгдөнө. Зөвхөн танд харагдана.</div></div>
       <div><label class="lb">Овог нэр</label><input class="in" id="pfName" value="${esc(pr.name||S.meName||'')}" maxlength="80"></div>
       <div><label class="lb">Утас</label><input class="in" id="pfPhone" value="${esc(pr.phone||'')}" maxlength="20" inputmode="tel"></div>
       <div><label class="lb">И-мэйл</label><input class="in" id="pfEmail" value="${esc(pr.email||'')}" maxlength="80"></div>
@@ -1471,6 +1528,16 @@ document.addEventListener('click',async e=>{
   const ac=e.target.closest('[data-acopy]'); if(ac){const c=findLetter(ac.dataset.acopy);if(c){try{await navigator.clipboard.writeText(letterText(c,getOrg(c.o)));toast('Хуулагдлаа')}catch(err){toast('Хуулж чадсангүй')}}return}
 });
 
+/* login required for letters */
+function renderLoginReq(m){
+  const thx=m.k==='t';
+  modal.innerHTML=`<div class="mh"><div style="flex:1"><div class="kind">${thx?'Талархал илгээх':'Гомдол илгээх'}</div><h2>Нэвтэрнэ үү</h2></div><button class="x" data-x>✕</button></div>
+  <div class="mb">
+    <div class="banner">🔒 ${thx?'Талархал':'Гомдол'} илгээхийн тулд нэвтрэх шаардлагатай. Учир нь бид захидлын явц, байгууллагын хариуг танд хүргэх хэрэгтэй.<br><br><b>Таны нэр, утас, и-мэйл зэрэг мэдээлэл хэнд ч харагдахгүй тул санаа зоволтгүй.</b> Зөвхөн таны захидлыг тухайн байгууллагад хүргүүлэхэд ашиглагдана.</div>
+    <div class="note">Сэтгэгдэл, од үлдээхэд нэвтрэх шаардлагагүй.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" data-x>Болих</button><button class="btn" data-au="google" style="background:#fff;color:#111;border-color:#fff">G&nbsp; Google-ээр нэвтрэх</button><button class="btn" data-loginpage>И-мэйлээр нэвтрэх</button></div>
+  </div>`;
+}
 /* add org */
 function openAddOrg(area){openModal({kind:'addorg',area})}
 function renderAddOrg(m){
