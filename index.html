@@ -207,22 +207,26 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .mprog{display:flex;gap:3px}.mprog i{width:16px;height:4px;border-radius:2px;background:var(--line2)}.mprog i.on{background:var(--good)}
 .btn.mini{padding:5px 10px;font-size:12px;border-radius:8px}
 .btn.mini.pay{background:#16a34a;border-color:#16a34a}
-.hot{padding:12px 14px;border-color:rgba(249,115,22,.4);background:linear-gradient(180deg,rgba(249,115,22,.08),var(--panel) 60%)}
-.hoth{display:flex;align-items:center;gap:8px;margin-bottom:10px;min-width:0}
-.hoth .fire{font-size:18px;animation:flick 1.4s ease-in-out infinite}
+.hot{padding:9px 12px;border-color:rgba(249,115,22,.4);background:linear-gradient(180deg,rgba(249,115,22,.08),var(--panel) 60%)}
+.hoth{display:flex;align-items:center;gap:8px;margin-bottom:6px;min-width:0}
+.hoth .fire{font-size:15px;animation:flick 1.4s ease-in-out infinite}
 @keyframes flick{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.15) rotate(3deg)}}
 .hoth .ht{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#fdba74;white-space:nowrap}
-.hoth .hotorg{background:none;border:none;padding:0;font-weight:700;font-size:13.5px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;text-align:left}
+.hoth .hotorg{background:none;border:none;padding:0;font-weight:700;font-size:12.5px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;text-align:left}
 .hoth .hotorg:hover{text-decoration:underline}
 .hoth .hotn{margin-left:auto;font-size:12px;color:var(--tx3);white-space:nowrap}
-.hotrail{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;cursor:grab;mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
-.hotrail::-webkit-scrollbar{display:none}.hotrail.drag{cursor:grabbing;user-select:none}
-.hrun{display:inline-flex;gap:10px;padding:2px 0}
-.hc{width:280px;flex:none;padding:10px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);border-top:3px solid var(--none);display:flex;flex-direction:column;gap:6px}
-.hc.sg{border-top-color:var(--good)}.hc.sm{border-top-color:var(--mid)}.hc.sb{border-top-color:var(--bad)}
-.hc .hm{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--tx3)}.hc .hm .st{color:#fbbf24;letter-spacing:1px}
+.hnav{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--tx3);flex:none}
+.hnav button{width:22px;height:22px;border-radius:6px;border:1px solid var(--line2);background:var(--panel);font-size:13px;line-height:1;padding:0}
+.hotwin{position:relative;height:74px;overflow:hidden}
+.hc{position:absolute;inset:0;padding:7px 10px;border-radius:10px;background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--none);display:flex;flex-direction:column;gap:3px}
+.hc.in{animation:hin .45s cubic-bezier(.2,.8,.2,1)}.hc.out{animation:hout .4s ease forwards}
+@keyframes hin{from{transform:translateY(100%);opacity:0}to{transform:none;opacity:1}}
+@keyframes hout{to{transform:translateY(-100%);opacity:0}}
+.hc.sg{border-left-color:var(--good)}.hc.sm{border-left-color:var(--mid)}.hc.sb{border-left-color:var(--bad)}
+.hc .hm{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--tx3)}.hc .hm .st{color:#fbbf24;letter-spacing:1px}
 .hc .hn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hc p{margin:0;font-size:13px;color:var(--tx2);white-space:normal;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:3.9em}
+.hc p{margin:0;font-size:12.5px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hc .frx{margin-top:0}.hc .rb.sm{padding:1px 7px;font-size:11px}
 .frx{margin-top:6px}.rxb{display:inline-flex;gap:6px}
 .lvlnote{font-size:12px;color:var(--tx3);margin:-4px 0 10px}
 .tab.privt{border-color:rgba(167,139,250,.55);color:#ddd6fe}
@@ -441,8 +445,9 @@ footer{color:var(--tx3);font-size:11.5px;padding:10px 0 30px;border-top:1px soli
       <div class="tip" id="tip"></div>
     </div>
     <div class="card hot" id="hotCard" style="display:none">
-      <div class="hoth"><span class="fire">🔥</span><span class="ht">Халуухан сэдэв</span><button class="hotorg" id="hotOrg"></button><span class="hotn" id="hotN"></span></div>
-      <div class="hotrail" id="hotRail"></div>
+      <div class="hoth"><span class="fire">🔥</span><span class="ht">Халуухан сэдэв</span><button class="hotorg" id="hotOrg"></button><span class="hotn" id="hotN"></span>
+        <span class="hnav"><button id="hotPrev" title="Өмнөх">‹</button><span id="hotIdx"></span><button id="hotNext" title="Дараах">›</button></span></div>
+      <div class="hotwin" id="hotWin"></div>
     </div>
     <div class="card feed">
       <h3><span class="live"></span> <span id="feedTitle">Шинэ сэтгэгдлүүд</span> <span class="cnt" id="feedN" style="color:var(--tx3);font-weight:500"></span><span class="fnav"><button id="fUp" title="Дээш">▲</button><button id="fDn" title="Доош">▼</button></span></h3>
@@ -1427,12 +1432,28 @@ function renderHot(){
   const sc=oScore(oid),c=cls(sc);
   $('#hotOrg').innerHTML=`${orgIcon(o)}${esc(o.name)}`; $('#hotOrg').dataset.org=oid;
   $('#hotN').innerHTML=`${arr.length} сэтгэгдэл${sc==null?'':` · <span style="color:${CLR[c]}">${Math.round(sc/5*100)}%</span>`}`;
-  const item=r=>{const nm=r.a?'Нэргүй иргэн':(r.uid===S.uid?'Та':(S.names[r.uid]||'Иргэн'));const cc=r.s>=4?'g':r.s===3?'m':'b';
-    return `<div class="hc s${cc}"><div class="hm"><span class="st">${starStr(r.s)}</span><span class="hn">${esc(nm)} · ${dateStr(r.t)}</span>${revMenu(r.key)}</div><p>${r.x?esc(r.x):'<i style="color:var(--tx3)">Зөвхөн од өгсөн</i>'}</p><div class="frx">${rxBtns(r.key)}</div></div>`};
-  const html=list.map(item).join('');
-  const rail=$('#hotRail'); const keep=sameOrg?rail.scrollLeft:0;
-  rail.innerHTML=`<div class="hrun">${html}${list.length>=3?html:''}</div>`; rail._loop=list.length>=3; rail.scrollLeft=keep; rail._pos=keep;
+  HOT.list=list; if(!sameOrg)HOT.i=0; if(HOT.i>=list.length)HOT.i=0;
+  hotShow(0,true);
 }
+const HOT={list:[],i:0,hover:false,timer:null};
+function hotShow(dir,instant){
+  const L=HOT.list; if(!L.length)return;
+  HOT.i=(HOT.i+dir+L.length)%L.length; const r=L[HOT.i];
+  const nm=r.a?'Нэргүй иргэн':(r.uid===S.uid?'Та':(S.names[r.uid]||'Иргэн'));const cc=r.s>=4?'g':r.s===3?'m':'b';
+  const win=$('#hotWin');
+  win.querySelectorAll('.hc').forEach(el=>{if(instant)el.remove();else{el.classList.add('out');setTimeout(()=>el.remove(),400)}});
+  const d=document.createElement('div'); d.className='hc s'+cc+(instant?'':' in');
+  d.innerHTML=`<div class="hm"><span class="st">${starStr(r.s)}</span><span class="hn">${esc(nm)} · ${dateStr(r.t)}</span>${revMenu(r.key)}</div><p>${r.x?esc(r.x):'<i style="color:var(--tx3)">Зөвхөн од өгсөн</i>'}</p><div class="frx">${rxBtns(r.key)}</div>`;
+  win.appendChild(d);
+  $('#hotIdx').textContent=(HOT.i+1)+'/'+L.length;
+  $('#hotPrev').style.visibility=$('#hotNext').style.visibility=L.length>1?'':'hidden';
+  if(!HOT.timer)HOT.timer=setInterval(()=>{if(!HOT.hover&&!document.hidden&&S.page==='map'&&HOT.list.length>1&&!document.querySelector('#hotWin .rmenu.open'))hotShow(1)},4000);
+}
+$('#hotPrev').onclick=()=>hotShow(-1);
+$('#hotNext').onclick=()=>hotShow(1);
+$('#hotCard').addEventListener('mouseenter',()=>{HOT.hover=true});
+$('#hotCard').addEventListener('mouseleave',()=>{HOT.hover=false});
+$('#hotCard').addEventListener('touchstart',()=>{HOT.hover=true;clearTimeout(HOT.tt);HOT.tt=setTimeout(()=>{HOT.hover=false},6000)},{passive:true});
 document.getElementById('hotOrg').addEventListener('click',e=>{const id=e.currentTarget.dataset.org;if(id)openOrg(id)});
 
 /* news ticker: one line, талархал + гомдол mixed, names shown one by one */
@@ -1477,22 +1498,7 @@ function dragScroll(el,axis){
   el.addEventListener('mouseenter',()=>{el._hover=true});el.addEventListener('mouseleave',()=>{el._hover=false});
 }
 dragScroll($('#feed'),'y');
-dragScroll($('#hotRail'),'x');
-$('#hotRail').addEventListener('touchstart',()=>{$('#hotRail')._hold=true},{passive:true});
-$('#hotRail').addEventListener('touchend',()=>{setTimeout(()=>{$('#hotRail')._hold=false},2500)},{passive:true});
-(function hotLoop(){
-  let last=performance.now();
-  function step(now){
-    const dt=Math.min(64,now-last);last=now;
-    const r=document.getElementById('hotRail');
-    if(r&&r._loop&&S.page==='map'){
-      if(!r._hold&&!r._hover){r._pos=(r._pos==null?r.scrollLeft:r._pos)+dt*0.035;r.scrollLeft=r._pos}else r._pos=r.scrollLeft;
-      const half=r.scrollWidth/2; if(half>0&&r.scrollLeft>=half){r.scrollLeft-=half;r._pos=r.scrollLeft}
-    }
-    requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-})();
+
 $('#fUp').onclick=()=>{const f=$('#feed');f.scrollTop-=f.clientHeight*0.8};
 $('#fDn').onclick=()=>{const f=$('#feed');f.scrollTop+=f.clientHeight*0.8};
 /* slow auto-scroll for the best / worst ranking */
