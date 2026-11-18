@@ -161,6 +161,8 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .paybox .cp{border:1px solid var(--line2);background:var(--bg2);border-radius:8px;width:32px;height:28px}
 .paybox .cp:hover{border-color:var(--acc)}
 .admq{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}.admq .in{flex:1;min-width:260px}
+.oved{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px dashed rgba(124,58,237,.6);background:rgba(124,58,237,.08);border-radius:12px;font-size:12.5px;color:#ddd6fe}
+.oved .in{width:84px;padding:6px 8px}.oved .btn{padding:6px 12px}
 .lvlnote{font-size:12px;color:var(--tx3);margin:-4px 0 10px}
 .tab.privt{border-color:rgba(167,139,250,.55);color:#ddd6fe}
 .tab.privt.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
@@ -584,7 +586,7 @@ const S={
   added:{},     // orgId -> org
   hidden:{},    // key -> true
   status:{},    // complaint code -> status
-  myComplaints:{}, allComplaints:{}, sent:{}, myDocExists:false, profile:{}, meName:'', page:'map',
+  myComplaints:{}, allComplaints:{}, sent:{}, ov:{a:{},o:{}}, myDocExists:false, profile:{}, meName:'', page:'map',
   names:{},
   orgStats:{}, areaStats:{}, reviewsByOrg:{}, revReact:{}
 };
@@ -619,6 +621,10 @@ function score(st){
   const likeStar=v?1+4*(st.l/v):0;
   return (st.s+likeStar*w)/(st.n+w);
 }
+const ovA=id=>{const v=S.ov&&S.ov.a&&S.ov.a[id];return (v==null||v==='')?null:+v};
+const ovO=id=>{const v=S.ov&&S.ov.o&&S.ov.o[id];return (v==null||v==='')?null:+v};
+function aScore(id){const v=ovA(id);return v!=null?Math.max(1,v/20):score(S.areaStats[id])}
+function oScore(id){const v=ovO(id);return v!=null?Math.max(1,v/20):score(S.orgStats[id])}
 function cls(sc){return sc==null?'n':sc>=3.75?'g':sc>=2.75?'m':'b'}
 const CLR={g:'#22c55e',m:'#f59e0b',b:'#ef4444',n:null};
 const LBL={g:'Сайн',m:'Дунд',b:'Муу',n:'Үнэлгээгүй'};
@@ -680,6 +686,17 @@ async function addOrg(area,name,cat,priv,addr){
   try{await writeDoc('orgs/'+S.uid,{items:mine});toast('Байгууллага нэмэгдлээ')}catch(e){}
   return id;
 }
+async function setOverride(kind,id,val){
+  const nx={a:Object.assign({},S.ov.a),o:Object.assign({},S.ov.o)};
+  if(val==null)delete nx[kind][id]; else nx[kind][id]=val;
+  S.ov=nx; refresh();
+  try{await writeDoc('meta/override',nx);toast(val==null?'Автомат тооцоонд буцаалаа':'Хадгалагдлаа: '+val+'%')}catch(e){}
+}
+async function adminDeleteReview(uid,oid){
+  const items=Object.assign({},S.reviews[uid]||{}); if(!items[oid])return;
+  delete items[oid]; S.reviews[uid]=items; refresh();
+  try{await writeDoc('reviews/'+uid,{items});toast('Сэтгэгдэл устгагдлаа')}catch(e){}
+}
 async function setHidden(key,on){
   const h=Object.assign({},S.hidden); if(on)h[key]=true; else delete h[key]; S.hidden=h; rebuildAdded(); refresh();
   try{await writeDoc('meta/hidden',{h})}catch(e){}
@@ -736,6 +753,7 @@ async function initDb(){
   db.collection('reviews').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data();o[d.id]=(v&&v.items)||{}});S.reviews=o;if(!snap.metadata.fromCache)done();refresh()},onErr);
   db.collection('reactions').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data()||{};o[d.id]={o:v.o||{},r:v.r||{}}});S.reacts=o;refresh()},onErr);
   db.collection('orgs').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data();o[d.id]=(v&&v.items)||{}});S.addedRaw=o;rebuildAdded();refresh()},onErr);
+  db.doc('meta/override').onSnapshot(d=>{const v=(d.exists&&d.data())||{};S.ov={a:v.a||{},o:v.o||{}};refresh()},onErr);
   db.doc('meta/hidden').onSnapshot(d=>{S.hidden=(d.exists&&d.data().h)||{};rebuildAdded();refresh()},onErr);
   db.doc('meta/complaintStatus').onSnapshot(d=>{S.status=(d.exists&&d.data().s)||{};refreshModal()},onErr);
   if(!S.anon)db.doc('complaints/'+S.uid).onSnapshot(d=>{S.myDocExists=d.exists;S.myComplaints=(d.exists&&d.data().items)||{};refreshModal();renderPages()},onErr);
@@ -768,7 +786,7 @@ function ctrLabel(a){const v=CTR[a];if(!v)return '';const sn=v[0]?nameOf(v[0]):'
 const W=1000,H=620;
 let gCtr,proj,pathGen,zoom,svg,gZoom,gBase,gMid,gHi,gLab,FEAT={},AIMAGS=[],SOUMS=[],KHOROOS=[],curT=d3.zoomIdentity;
 function areaFeature(id){let p=id,g=0;while(p&&g++<8){if(FEAT[p])return FEAT[p];p=parentOf(p)}return null}
-function fillFor(id){const c=cls(score(S.areaStats[id]));return CLR[c]||'#26324f'}
+function fillFor(id){const c=cls(aScore(id));return CLR[c]||'#26324f'}
 function initMap(topo){
   AIMAGS=topojson.feature(topo,topo.objects.aimag).features;
   SOUMS=topojson.feature(topo,topo.objects.soum).features;
@@ -795,7 +813,7 @@ function initMap(topo){
 }
 const tip=$('#tip');
 function showTip(e,f){
-  const id=f.properties.id; const st=S.areaStats[id]; const sc=score(st); const c=cls(sc);
+  const id=f.properties.id; const st=S.areaStats[id]; const sc=aScore(id); const c=cls(sc);
   tip.innerHTML=`<b>${esc(nameOf(id))}</b> <span style="color:var(--tx3)">${esc(TYPE_LBL[typeOf(id)]||'')}</span>${isCentre(id)?` <span style="color:#fde68a">★ аймгийн төв · ${esc(CTR[CTR_SOUM[id]][1])}</span>`:CTR[id]?` <span style="color:#fde68a">· төв: ${esc(CTR[id][1])}</span>`:''}<br>`+
     (sc==null?'<span style="color:var(--tx3)">Үнэлгээ алга</span>':`<span style="color:${CLR[c]};font-weight:700">${Math.round(sc/5*100)}% · ${sc.toFixed(1)}/5 · ${LBL[c]}</span> <span style="color:var(--tx3)">(${cnt(st)} санал)</span>`);
   const box=$('.mapbox').getBoundingClientRect();
@@ -829,7 +847,7 @@ function drawMap(zoomTo){
   const lg=gLab.selectAll('g.lb').data(labs,f=>f.properties.id).join(en=>{const g=en.append('g').attr('class','lb');g.append('text').attr('class','nm');g.append('rect').attr('class','pb');g.append('text').attr('class','pc');return g});
   lg.select('text.nm').attr('class','nm'+(id==='MN'?' big':'')).text(f=>{const n=f.properties.n;return f.properties.t==='khoroo'?n.replace(/-р хороо$/,'')+'-р':n});
   lg.each(function(f){
-    const sc=score(S.areaStats[f.properties.id]);const c=cls(sc);
+    const sc=aScore(f.properties.id);const c=cls(sc);
     const txt=sc==null?'—':Math.round(sc/5*100)+'%';
     const g=d3.select(this);
     g.select('text.pc').text(txt).attr('fill',sc==null?'#94a3b8':'#fff');
@@ -912,13 +930,20 @@ $('#admBtn').onclick=()=>{location.hash='admin'};
 
 /* ---------- panel ---------- */
 let rankTab='best';let orgFilter='all';
-function scoreBox(st,big){
-  const sc=score(st),c=cls(sc);
-  return `<div class="score ${c}"><div class="v">${sc==null?'—':Math.round(sc/5*100)+'%'}</div><div class="l">${LBL[c]}${sc==null?'':' · '+sc.toFixed(1)+'/5'}</div><div class="c">${cnt(st)} санал</div></div>`;
+function scoreBox(st,ovPct){
+  const isOv=ovPct!=null&&ovPct!=='';
+  const sc=isOv?Math.max(1,(+ovPct)/20):score(st),c=cls(sc);
+  const pct=isOv?Math.round(+ovPct):(sc==null?null:Math.round(sc/5*100));
+  return `<div class="score ${c}"${isOv?' title="Удирдлагын тохируулсан үнэлгээ"':''}><div class="v">${pct==null?'—':pct+'%'}</div><div class="l">${LBL[c]}${sc==null?'':' · '+sc.toFixed(1)+'/5'}</div><div class="c">${isOv?'✎ тохируулсан':cnt(st)+' санал'}</div></div>`;
+}
+function ovEditor(kind,id){
+  if(!S.isAdmin)return '';
+  const cur=kind==='a'?ovA(id):ovO(id);
+  return `<div class="oved"><span>⚙ Хувь тохируулах</span><input class="in" type="number" min="0" max="100" step="1" id="ov_${kind}" value="${cur==null?'':cur}" placeholder="авто"><span>%</span><button class="btn" data-ovsave="${kind}|${esc(id)}">Хадгалах</button>${cur!=null?`<button class="btn ghost" data-ovclear="${kind}|${esc(id)}">Автомат болгох</button>`:''}</div>`;
 }
 function orgRow(o,showArea,noParent){
   const par=(!noParent&&o.parent)?getOrg(o.parent):null;
-  const st=S.orgStats[o.id],sc=score(st),c=cls(sc);
+  const st=S.orgStats[o.id],sc=oScore(o.id),c=cls(sc);
   const avg=st&&st.n?(st.s/st.n).toFixed(1):'—';
   return `<div class="org s${c}" data-org="${esc(o.id)}">
     <div class="nm"><b>${orgIcon(o)}${esc(o.name)}</b><small>${esc(o.cat)}${isPriv(o)?' · хувийн байгууллага':o.user?' · иргэн нэмсэн':''}${o.addr?`</small><small class="par">📍 ${esc(o.addr)}`:''}${showArea?' · '+esc(nameOf(o.area)):''}</small>${par?`<small class="par">↳ Харьяа: ${esc(par.name)}</small>`:''}</div>
@@ -929,9 +954,10 @@ function renderPanel(){
   const id=current,t=typeOf(id)||'country';
   const st=S.areaStats[id];
   const path=ancestors(id).slice(0,-1).map(a=>a==='MN'?'Монгол Улс':nameOf(a)).join(' › ');
-  let h=`<div class="ahead"><div class="t"><div class="kind">${esc(TYPE_LBL[t]||'')}${isCentre(id)?'<span class="ctrtag">★ Аймгийн төв</span>':''}</div><h1>${esc(id==='MN'?'Монгол Улс':nameOf(id))}</h1><div class="path">${esc(path||'Бүх аймаг, нийслэлийн нэгдсэн үнэлгээ')}${isCentre(id)&&CTR[CTR_SOUM[id]][1]!==nameOf(id)?' · '+esc(CTR[CTR_SOUM[id]][1])+' хот':''}${t==='aimag'&&CTR[id]?` · <a href="#${esc(CTR[id][0])}" data-go="${esc(CTR[id][0])}" style="color:#fde68a;text-decoration:none">★ Төв: ${esc(ctrLabel(id))}</a>`:''}</div></div>${scoreBox(st)}</div>`;
+  let h=`<div class="ahead"><div class="t"><div class="kind">${esc(TYPE_LBL[t]||'')}${isCentre(id)?'<span class="ctrtag">★ Аймгийн төв</span>':''}</div><h1>${esc(id==='MN'?'Монгол Улс':nameOf(id))}</h1><div class="path">${esc(path||'Бүх аймаг, нийслэлийн нэгдсэн үнэлгээ')}${isCentre(id)&&CTR[CTR_SOUM[id]][1]!==nameOf(id)?' · '+esc(CTR[CTR_SOUM[id]][1])+' хот':''}${t==='aimag'&&CTR[id]?` · <a href="#${esc(CTR[id][0])}" data-go="${esc(CTR[id][0])}" style="color:#fde68a;text-decoration:none">★ Төв: ${esc(ctrLabel(id))}</a>`:''}</div></div>${scoreBox(st,id==='MN'?null:ovA(id))}</div>${id==='MN'?'':ovEditor('a',id)}`;
   if(id==='MN'){
-    const ranked=Object.entries(S.orgStats).map(([oid,s])=>({o:getOrg(oid),sc:score(s)})).filter(x=>x.o&&x.sc!=null);
+    const rk=new Set([...Object.keys(S.orgStats),...Object.keys((S.ov&&S.ov.o)||{})]);
+    const ranked=[...rk].map(oid=>({o:getOrg(oid),sc:oScore(oid)})).filter(x=>x.o&&x.sc!=null);
     const list=rankTab==='best'?ranked.sort((a,b)=>b.sc-a.sc):ranked.sort((a,b)=>a.sc-b.sc);
     h+=`<div class="sec"><h3>Байгууллагын эрэмбэ <span class="sp tabs"><button class="tab ${rankTab==='best'?'on':''}" data-tab="best">🟢 Шилдэг</button><button class="tab ${rankTab==='worst'?'on':''}" data-tab="worst">🔴 Хамгийн муу</button></span></h3>
       ${list.length?`<div class="orgs rscroll" id="rankBox">${(()=>{const top=list.slice(0,20).map(x=>orgRow(x.o,true)).join('');return list.length>3?top+'<div class="rsep"></div>'+top:top})()}</div>${list.length>3?`<div class="note" style="text-align:center;margin-top:6px">↕ ${Math.min(20,list.length)} байгууллага аажмаар урсаж байна · курсор тавихад зогсоно</div>`:''}`:'<div class="empty">Одоогоор үнэлгээ алга. Газрын зургаас байгууллагаа олоод анхны үнэлгээгээ өгөөрэй.</div>'}</div>`;
@@ -940,7 +966,7 @@ function renderPanel(){
   let kidsHtml='';
   if(kids.length){
     const sorted=kids.slice().sort((a,b)=>{const sa=cnt(S.areaStats[a]),sb=cnt(S.areaStats[b]);return (isCentre(b)-isCentre(a))||(sb>0)-(sa>0)||nameOf(a).localeCompare(nameOf(b),'mn',{numeric:true})});
-    kidsHtml=`<div class="sec"><h3>${esc(KIDS_LBL[t]||'Доод нэгж')} <span class="cnt">${kids.length}</span></h3>${t==='aimag'?'<div class="lvlnote">Сум бүрийн жижиг нэгжүүд (сумын цагдаагийн хэсэг, эрүүл мэндийн төв…) аймгийн байгууллагын харьяанд ажилладаг.</div>':''}<div class="chips">${sorted.map(k=>{const c=cls(score(S.areaStats[k]));return isCentre(k)?`<button class="chip ctr" data-go="${esc(k)}" title="Аймгийн төв"><span class="dot d${c}"></span>★ ${esc(nameOf(k))}${CTR[CTR_SOUM[k]][1]!==nameOf(k)?' ('+esc(CTR[CTR_SOUM[k]][1])+')':''} · аймгийн төв</button>`:`<button class="chip" data-go="${esc(k)}"><span class="dot d${c}"></span>${esc(nameOf(k))}</button>`}).join('')}</div></div>`;
+    kidsHtml=`<div class="sec"><h3>${esc(KIDS_LBL[t]||'Доод нэгж')} <span class="cnt">${kids.length}</span></h3>${t==='aimag'?'<div class="lvlnote">Сум бүрийн жижиг нэгжүүд (сумын цагдаагийн хэсэг, эрүүл мэндийн төв…) аймгийн байгууллагын харьяанд ажилладаг.</div>':''}<div class="chips">${sorted.map(k=>{const c=cls(aScore(k));return isCentre(k)?`<button class="chip ctr" data-go="${esc(k)}" title="Аймгийн төв"><span class="dot d${c}"></span>★ ${esc(nameOf(k))}${CTR[CTR_SOUM[k]][1]!==nameOf(k)?' ('+esc(CTR[CTR_SOUM[k]][1])+')':''} · аймгийн төв</button>`:`<button class="chip" data-go="${esc(k)}"><span class="dot d${c}"></span>${esc(nameOf(k))}</button>`}).join('')}</div></div>`;
   }
   const allOrgs=orgsOf(id);
   const FL=[['all','Бүгд'],['Сургууль','🏫 Сургууль'],['Цэцэрлэг','🧸 Цэцэрлэг'],['Эмнэлэг','🏥 Эмнэлэг'],['priv','🏪 Хувийн байгууллага']];
@@ -1012,7 +1038,7 @@ function renderOrgModal(m){
   const parO=o.parent?getOrg(o.parent):null;
   resolveNames(revs.map(r=>r.uid));
   const rr=(S.reacts[S.uid]||{r:{}}).r||{};
-  modal.innerHTML=`<div class="mh"><div style="flex:1;min-width:0"><div class="kind">${esc(o.cat)}</div><h2>${esc(o.name)}</h2><div class="path">${esc(path)}</div>${o.addr?`<div class="path" style="margin-top:4px;color:#ddd6fe">📍 ${esc(o.addr)}</div>`:''}${isPriv(o)&&!o.addr&&o.by===S.uid?`<div style="margin-top:6px;display:flex;gap:6px"><input class="in" id="setAddr" maxlength="200" placeholder="📍 Байршил нэмэх" style="padding:6px 10px"><button class="btn" data-setaddr style="padding:6px 12px">Хадгалах</button></div>`:''}${parO?`<div class="path" style="margin-top:4px">↳ Харьяа: <a href="#" data-openorg="${esc(parO.id)}" style="color:#fde68a;text-decoration:none">${esc(parO.name)}</a></div>`:''}${(()=>{const ch=(KIDS[o.area]||[]).flatMap(k=>tmplOrgs(k).filter(x=>x.parent===o.id));return ch.length?`<div class="path" style="margin-top:4px;color:#9fb4dd">🏛 Харьяа ${ch.length} нэгжтэй том байгууллага${(()=>{const ss=ch.map(x=>S.orgStats[x.id]).filter(Boolean);const agg=ss.reduce((a,x)=>({n:a.n+x.n,s:a.s+x.s,l:a.l+x.l,d:a.d+x.d}),{n:0,s:0,l:0,d:0});const sc=score(agg);return sc==null?'':` · нэгжүүдийн дундаж ${Math.round(sc/5*100)}%`})()}</div>`:''})()}</div>${scoreBox(st)}<button class="x" data-x>✕</button></div>
+  modal.innerHTML=`<div class="mh"><div style="flex:1;min-width:0"><div class="kind">${esc(o.cat)}</div><h2>${esc(o.name)}</h2><div class="path">${esc(path)}</div>${o.addr?`<div class="path" style="margin-top:4px;color:#ddd6fe">📍 ${esc(o.addr)}</div>`:''}${isPriv(o)&&!o.addr&&o.by===S.uid?`<div style="margin-top:6px;display:flex;gap:6px"><input class="in" id="setAddr" maxlength="200" placeholder="📍 Байршил нэмэх" style="padding:6px 10px"><button class="btn" data-setaddr style="padding:6px 12px">Хадгалах</button></div>`:''}${parO?`<div class="path" style="margin-top:4px">↳ Харьяа: <a href="#" data-openorg="${esc(parO.id)}" style="color:#fde68a;text-decoration:none">${esc(parO.name)}</a></div>`:''}${(()=>{const ch=(KIDS[o.area]||[]).flatMap(k=>tmplOrgs(k).filter(x=>x.parent===o.id));return ch.length?`<div class="path" style="margin-top:4px;color:#9fb4dd">🏛 Харьяа ${ch.length} нэгжтэй том байгууллага${(()=>{const ss=ch.map(x=>S.orgStats[x.id]).filter(Boolean);const agg=ss.reduce((a,x)=>({n:a.n+x.n,s:a.s+x.s,l:a.l+x.l,d:a.d+x.d}),{n:0,s:0,l:0,d:0});const sc=score(agg);return sc==null?'':` · нэгжүүдийн дундаж ${Math.round(sc/5*100)}%`})()}</div>`:''})()}</div>${scoreBox(st,ovO(o.id))}<button class="x" data-x>✕</button></div>${S.isAdmin?'<div style="padding:10px 22px 0">'+ovEditor('o',o.id)+'</div>':''}
   <div class="mb">
     <div class="row">
       <div class="dist">${dist}</div>
@@ -1035,7 +1061,7 @@ function renderOrgModal(m){
     <div class="sec"><h3>Иргэдийн сэтгэгдэл <span class="cnt">${revs.length}</span></h3>
       <div class="revs">${revs.length?revs.map(r=>{const k=r.key;const e=S.revReact[k]||{l:0,d:0};const my=rr[k];
         const nm=r.a?'Нэргүй иргэн':(r.uid===S.uid?'Та':(S.names[r.uid]||'Иргэн'));
-        return `<div class="rev"><div class="top"><b>${esc(nm)}</b><span class="st">${starStr(r.s)}</span><span>${dateStr(r.t)}</span>${S.isAdmin?`<button class="rb sm" data-hide="${esc(k)}" style="margin-left:auto">Нуух</button>`:''}</div>${r.x?`<p>${esc(r.x)}</p>`:'<div style="height:6px"></div>'}
+        return `<div class="rev"><div class="top"><b>${esc(nm)}</b><span class="st">${starStr(r.s)}</span><span>${dateStr(r.t)}</span>${S.isAdmin?`<span style="margin-left:auto;display:flex;gap:6px"><button class="rb sm" data-hide="${esc(k)}">Нуух</button><button class="rb sm dn" data-del="${esc(k)}">🗑 Устгах</button></span>`:''}</div>${r.x?`<p>${esc(r.x)}</p>`:'<div style="height:6px"></div>'}
         <div class="react"><button class="rb sm up ${my===1?'on':''}" data-rrx="${esc(k)}" data-v="1">👍 ${e.l}</button><button class="rb sm dn ${my===-1?'on':''}" data-rrx="${esc(k)}" data-v="-1">👎 ${e.d}</button></div></div>`}).join(''):'<div class="empty">Сэтгэгдэл алга. Анхных нь болоорой!</div>'}</div>
     </div>
     ${o.user&&S.isAdmin?`<button class="btn ghost" data-hideorg>Энэ байгууллагыг нуух (модерац)</button>`:''}
@@ -1069,6 +1095,15 @@ modal.addEventListener('click',async e=>{
 
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-copytxt]');if(!b)return;e.preventDefault();e.stopPropagation();
   try{await navigator.clipboard.writeText(b.dataset.copytxt);toast('Хуулагдлаа: '+b.dataset.copytxt)}catch(err){toast(b.dataset.copytxt)}},true);
+document.addEventListener('click',async e=>{
+  if(!S.isAdmin)return;
+  const sv=e.target.closest('[data-ovsave]'); if(sv){e.preventDefault();e.stopPropagation();const [k,id]=sv.dataset.ovsave.split('|');const inp=document.getElementById('ov_'+k);const v=Math.round(+inp.value);
+    if(inp.value===''||isNaN(v)||v<0||v>100){toast('0–100 хооронд тоо оруулна уу');return} await setOverride(k,id,v);return}
+  const cl=e.target.closest('[data-ovclear]'); if(cl){e.preventDefault();e.stopPropagation();const [k,id]=cl.dataset.ovclear.split('|');await setOverride(k,id,null);return}
+  const dl=e.target.closest('[data-del]'); if(dl){e.preventDefault();e.stopPropagation();
+    if(dl.dataset.armed!=='1'){dl.dataset.armed='1';dl.textContent='Дахин дарж устгана уу';setTimeout(()=>{if(dl.isConnected){dl.dataset.armed='';dl.textContent='🗑 Устгах'}},3500);return}
+    const k=dl.dataset.del;const i=k.indexOf('|');await adminDeleteReview(k.slice(0,i),k.slice(i+1));return}
+},true);
 /* letter flow (гомдол + талархал) */
 const CTYPES=['Үйлчилгээний чанар','Хүнд суртал, удаашрал','Албан хаагчийн ёс зүй','Авлига, хээл хахууль','Хууль бус шийдвэр','Төлбөр, мөнгөн асуудал','Мэдээлэл өгөхөөс татгалзсан','Бусад'];
 const TTYPES=['Сайн үйлчилгээ','Асуудлыг шуурхай шийдсэн','Эелдэг харилцаа','Тусламж дэмжлэг','Бусад'];
@@ -1375,7 +1410,13 @@ function renderAdminPage(){
   const qq=(adm.q||'').trim().toUpperCase().replace(/[\s-]/g,'');
   const list=all.filter(c=>(adm.k==='all'||kOf(c)===adm.k)&&(adm.st==='all'||cStatus(c)===adm.st)&&(!qq||String(c.code).toUpperCase().replace(/-/g,'').includes(qq)||String(c.phone||'').includes(qq)||String(c.name||'').toUpperCase().includes(qq)));
   let body='';
-  if(adm.tab==='letters'){
+  if(adm.tab==='ov'){
+    const ra=Object.entries((S.ov&&S.ov.a)||{}), ro=Object.entries((S.ov&&S.ov.o)||{});
+    const row=(k,id,v,name,sub)=>`<div class="org" ><div class="nm"><b>${esc(name)}</b><small>${esc(sub)}</small></div><div class="meta"><div class="st" style="color:#fde68a">✎ ${v}%</div><div>бодит: ${(()=>{const sc=k==='a'?score(S.areaStats[id]):score(S.orgStats[id]);return sc==null?'—':Math.round(sc/5*100)+'%'})()}</div></div><button class="btn ghost" data-ovclear="${k}|${esc(id)}">Автомат</button></div>`;
+    body=`<div class="lvlnote">Аймаг, сум, дүүрэг, хорооны хувийг тухайн газрын хуудасны дээд хэсэгт, байгууллагынхыг байгууллагын цонхонд “⚙ Хувь тохируулах” талбараар өөрчилнө. Тохируулсан хувь нийтэд “✎ тохируулсан” тэмдэгтэй харагдана.</div>
+    <h3 style="font-size:13px;color:var(--tx2)">Бүс нутаг (${ra.length})</h3><div class="orgs">${ra.length?ra.map(([id,v])=>row('a',id,v,id==='MN'?'Монгол Улс':nameOf(id),TYPE_LBL[typeOf(id)]||'')).join(''):'<div class="empty">Тохируулсан бүс алга</div>'}</div>
+    <h3 style="font-size:13px;color:var(--tx2);margin-top:14px">Байгууллага (${ro.length})</h3><div class="orgs">${ro.length?ro.map(([id,v])=>{const o=getOrg(id);return o?row('o',id,v,o.name,nameOf(o.area)):''}).join(''):'<div class="empty">Тохируулсан байгууллага алга</div>'}</div>`;
+  } else if(adm.tab==='letters'){
     const pend=all.filter(c=>cStatus(c)==='pending').length;
     body=`<div class="admq"><input class="in" id="admQ" placeholder="🔍 Нэхэмжлэхийн дугаар (банкны гүйлгээний утга), утас эсвэл нэрээр хайх — ж: SH482913" value="${esc(adm.q||'')}">${pend?`<span class="pill" style="color:#fde68a;border-color:rgba(251,191,36,.5);white-space:nowrap">⏳ ${pend} төлбөр хүлээгдэж байна</span>`:''}</div>
     <div class="tabs" style="flex-wrap:wrap;margin-bottom:8px">${[['all','Бүгд'],['c','Гомдол'],['t','Талархал']].map(([k,l])=>`<button class="tab ${adm.k===k?'on':''}" data-ak="${k}">${l}</button>`).join('')}<span style="width:12px"></span>${[['all','Бүх төлөв']].concat(STAT).map(([k,l])=>`<button class="tab ${adm.st===k?'on':''}" data-ast="${k}">${l}</button>`).join('')}</div>
@@ -1389,9 +1430,10 @@ function renderAdminPage(){
   } else if(adm.tab==='reviews'){
     const revs=[];for(const [uid,items] of Object.entries(S.reviews))for(const [oid,r] of Object.entries(items||{}))revs.push({uid,oid,key:uid+'|'+oid,...r});
     revs.sort((a,b)=>b.t-a.t);
-    body=revs.length?`<div class="revs">${revs.slice(0,150).map(r=>{const o=getOrg(r.oid);const hid=!!S.hidden[r.key];return `<div class="rev" style="${hid?'opacity:.45':''}"><div class="top"><b>${esc(o?o.name:r.oid)}</b><span class="st">${starStr(Math.round(+r.s||0))}</span><span>${dateStr(r.t)}</span><button class="rb sm" data-ahide="${esc(r.key)}" style="margin-left:auto">${hid?'Сэргээх':'Нуух'}</button></div>${r.x?`<p>${esc(r.x)}</p>`:''}</div>`}).join('')}</div>`:'<div class="empty">Сэтгэгдэл алга</div>';
+    body=revs.length?`<div class="revs">${revs.slice(0,150).map(r=>{const o=getOrg(r.oid);const hid=!!S.hidden[r.key];return `<div class="rev" style="${hid?'opacity:.45':''}"><div class="top"><b>${esc(o?o.name:r.oid)}</b><span class="st">${starStr(Math.round(+r.s||0))}</span><span>${dateStr(r.t)}</span><span style="margin-left:auto;display:flex;gap:6px"><button class="rb sm" data-ahide="${esc(r.key)}">${hid?'Сэргээх':'Нуух'}</button><button class="rb sm dn" data-del="${esc(r.key)}">🗑 Устгах</button></span></div>${r.x?`<p>${esc(r.x)}</p>`:''}</div>`}).join('')}</div>`:'<div class="empty">Сэтгэгдэл алга</div>';
   } else {
-    const ranked=Object.entries(S.orgStats).map(([oid,st])=>({o:getOrg(oid),st,sc:score(st)})).filter(x=>x.o&&x.sc!=null).sort((a,b)=>a.sc-b.sc);
+    const rk2=new Set([...Object.keys(S.orgStats),...Object.keys((S.ov&&S.ov.o)||{})]);
+    const ranked=[...rk2].map(oid=>({o:getOrg(oid),sc:oScore(oid)})).filter(x=>x.o&&x.sc!=null).sort((a,b)=>a.sc-b.sc);
     body=ranked.length?`<div class="orgs">${ranked.slice(0,40).map(x=>orgRow(x.o,true)).join('')}</div>`:'<div class="empty">Үнэлгээ алга</div>';
   }
   el.innerHTML=`<div class="pg">
@@ -1406,7 +1448,7 @@ function renderAdminPage(){
       <div class="card kpi"><div class="l">Хэрэглэгч</div><div class="v">${users}</div></div>
     </div>
     <div class="card box">
-      <div class="tabs" style="margin-bottom:14px"><button class="tab ${adm.tab==='letters'?'on':''}" data-atab="letters">📨 Захидлууд</button><button class="tab ${adm.tab==='reviews'?'on':''}" data-atab="reviews">💬 Сэтгэгдэл (модерац)</button><button class="tab ${adm.tab==='rank'?'on':''}" data-atab="rank">📉 Муу үнэлгээтэй байгууллага</button></div>
+      <div class="tabs" style="margin-bottom:14px"><button class="tab ${adm.tab==='letters'?'on':''}" data-atab="letters">📨 Захидлууд</button><button class="tab ${adm.tab==='reviews'?'on':''}" data-atab="reviews">💬 Сэтгэгдэл (модерац)</button><button class="tab ${adm.tab==='ov'?'on':''}" data-atab="ov">📊 Тохируулсан хувь</button><button class="tab ${adm.tab==='rank'?'on':''}" data-atab="rank">📉 Муу үнэлгээтэй байгууллага</button></div>
       ${body}
     </div></div>`;
   const qi=$('#admQ'); if(qi){qi.oninput=()=>{adm.q=qi.value;renderAdminPage()}; if(qFocus){qi.focus();try{qi.setSelectionRange(qPos,qPos)}catch(e){}}}
