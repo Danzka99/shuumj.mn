@@ -143,6 +143,16 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .lvlbox h3{color:#fde68a!important}
 .oscroll2 .org{flex-shrink:0}
 .oscroll2{scrollbar-width:thin;scrollbar-color:#2f3f63 transparent;overscroll-behavior:contain}
+.paybox{border:1px solid rgba(251,191,36,.45);background:linear-gradient(180deg,rgba(251,191,36,.08),rgba(251,191,36,.02));border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.paybox .ph{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:6px}
+.paybox .amt2{font-size:22px;font-weight:800;color:#fde68a}
+.paybox .pr{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px dashed rgba(255,255,255,.08);font-size:13.5px}
+.paybox .pr span{color:var(--tx2);min-width:120px}
+.paybox .pr b{flex:1;word-break:break-all}
+.paybox .pr.hl b{color:#fde68a;font-size:17px;letter-spacing:.04em}
+.paybox .cp{border:1px solid var(--line2);background:var(--bg2);border-radius:8px;width:32px;height:28px}
+.paybox .cp:hover{border-color:var(--acc)}
+.admq{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}.admq .in{flex:1;min-width:260px}
 .lvlnote{font-size:12px;color:var(--tx3);margin:-4px 0 10px}
 .tab.privt{border-color:rgba(167,139,250,.55);color:#ddd6fe}
 .tab.privt.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
@@ -1049,6 +1059,8 @@ modal.addEventListener('click',async e=>{
   }
 });
 
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-copytxt]');if(!b)return;e.preventDefault();e.stopPropagation();
+  try{await navigator.clipboard.writeText(b.dataset.copytxt);toast('Хуулагдлаа: '+b.dataset.copytxt)}catch(err){toast(b.dataset.copytxt)}},true);
 /* letter flow (гомдол + талархал) */
 const CTYPES=['Үйлчилгээний чанар','Хүнд суртал, удаашрал','Албан хаагчийн ёс зүй','Авлига, хээл хахууль','Хууль бус шийдвэр','Төлбөр, мөнгөн асуудал','Мэдээлэл өгөхөөс татгалзсан','Бусад'];
 const TTYPES=['Сайн үйлчилгээ','Асуудлыг шуурхай шийдсэн','Эелдэг харилцаа','Тусламж дэмжлэг','Бусад'];
@@ -1102,9 +1114,26 @@ function trackHtml(c){
   const idx=Math.max(0,['pending','paid','sent','answered'].indexOf(s));
   return `<div class="track">${['Бүртгэгдсэн','Төлбөр','Илгээсэн','Хариу'].map((t,i)=>`<div class="${i<=idx?'on':''}">${t}</div>`).join('')}</div>`;
 }
+const FEE=window.SHUUMJ_FEE||20000;
+function newInvoice(k){
+  const mine=new Set(Object.keys(S.myComplaints||{}));
+  let c; do{ c=(k==='t'?'TH':'SH')+String(Math.floor(100000+Math.random()*900000)); }while(mine.has(c));
+  return c;
+}
+function payBox(c,compact){
+  const B=window.SHUUMJ_BANK||{}; const ok=B.account&&!/PASTE|ДАНС/.test(B.account);
+  const row=(l,v,copy)=>`<div class="pr"><span>${l}</span><b>${esc(v)}</b>${copy?`<button class="cp" data-copytxt="${esc(v)}" title="Хуулах">⧉</button>`:''}</div>`;
+  return `<div class="paybox">
+    <div class="ph"><span>💳 Төлбөрийн заавар</span><span class="amt2">${fmt(FEE)}₮</span></div>
+    ${ok?`${row('Банк',B.bank||'')}${row('Дансны дугаар',B.account,true)}${B.iban?row('IBAN',B.iban,true):''}${row('Хүлээн авагч',B.holder||'')}${row('Дүн',fmt(FEE)+'₮',false)}
+    <div class="pr hl"><span>Гүйлгээний утга</span><b>${esc(c.code)}</b><button class="cp" data-copytxt="${esc(c.code)}" title="Хуулах">⧉</button></div>
+    ${compact?'':`<div class="note" style="margin-top:6px">⚠ Гүйлгээний утгад <b style="color:#fde68a">${esc(c.code)}</b> дугаарыг заавал бичнэ үү. Энэ дугаараар таны төлбөрийг танина. Төлбөр орсныг ажлын цагаар 24 цагийн дотор баталгаажуулна.</div>`}`
+    :`<div class="note">Дансны мэдээлэл удахгүй нэмэгдэнэ. Таны нэхэмжлэхийн дугаар: <b style="color:#fde68a">${esc(c.code)}</b></div>`}
+  </div>`;
+}
 function renderComplaint(m){
   const o=getOrg(m.oid); const f=m.f||{}; const k=m.k||(m.c&&kOf(m.c))||'c'; const thx=k==='t';
-  const steps=`<div class="steps"><span class="${m.step===1?'on':''}">1. ${thx?'Талархал':'Гомдол'} бичих</span><span class="${m.step===2?'on':''}">2. Шалгах, төлөх</span><span class="${m.step===3?'on':''}">3. Хянах</span></div>`;
+  const steps=`<div class="steps"><span class="${m.step===1?'on':''}">1. ${thx?'Талархал':'Гомдол'} бичих</span><span class="${m.step===2?'on':''}">2. Шалгаж зөвшөөрөх</span><span class="${m.step===3?'on':''}">3. Төлөх, хянах</span></div>`;
   let body='';
   if(m.step===1){
     body=`<div class="banner">${thx?'Таны талархлыг':'Таны гомдлыг'} бид албан бичгийн хэлбэрт оруулж <b>${esc(o?o.name:'')}</b>-д хүргүүлж, хариуг танд мэдэгдэнэ. Хувийн мэдээлэл зөвхөн захидал хүргүүлэхэд ашиглагдана.</div>
@@ -1120,13 +1149,12 @@ function renderComplaint(m){
   } else if(m.step===2){
     const c=m.c;
     body=`<div><label class="lb">Албан бичгийн урьдчилсан харагдац</label><div class="letter">${esc(letterText(c,o))}</div></div>
-    <div class="pay"><div><div class="note">Үйлчилгээний төлбөр</div><div class="amt">20,000₮</div></div>
-      <div style="flex:1;min-width:240px;font-size:13px;color:var(--tx2)">Төлбөрийн код: <b style="color:#fff">${esc(c.code)}</b><br>
-      QPay / банкны шилжүүлгээр төлнө. <span style="color:#fde3b0">Туршилтын хувилбар: онлайн төлбөрийн систем хараахан холбогдоогүй</span> — захиалга бүртгэгдэж, төлбөр баталгаажмагц албан бичиг илгээгдэнэ.</div></div>
-    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><button class="btn ghost" data-edit>← Засах</button><button class="btn ${thx?'':'red'}" data-submit style="${thx?'background:#16a34a;border-color:#16a34a':''}">${thx?'Талархал':'Гомдол'} бүртгүүлэх · 20,000₮</button></div>`;
+    <div class="banner">Үйлчилгээний төлбөр <b>${fmt(FEE)}₮</b>. “Зөвшөөрөх” дарахад таны захидал бүртгэгдэж, <b>дансны мэдээлэл болон таны нэхэмжлэхийн дугаар</b> гарч ирнэ. Төлбөр орсныг бид шалгаж баталгаажуулмагц албан бичгийг хүргүүлнэ.</div>
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><button class="btn ghost" data-edit>← Засах</button><button class="btn ${thx?'':'red'}" data-submit style="${thx?'background:#16a34a;border-color:#16a34a':''}">✓ Зөвшөөрөх, нэхэмжлэх авах</button></div>`;
   } else {
     const c=m.c; const s=cStatus(c);
-    body=`${m.fresh?`<div class="banner">✅ Таны ${thx?'талархал':'гомдол'} бүртгэгдлээ. Явцыг “Миний хуудас”-аас хянана уу.</div>`:''}
+    body=`${m.fresh?`<div class="banner">✅ Таны ${thx?'талархал':'гомдол'} бүртгэгдлээ. Доорх данс руу төлбөрөө шилжүүлнэ үү. Явцыг “Миний хуудас”-аас хянана.</div>`:''}
+    ${s==='pending'?payBox(c):''}
     <div class="row" style="justify-content:space-between"><div><div class="note">Код</div><div style="font-size:22px;font-weight:800">${esc(c.code)}</div></div><div style="text-align:right"><div class="note">Төлөв</div><b>${esc(statLbl(s))}</b></div></div>
     ${trackHtml(c)}
     ${c.reply&&c.reply.x?`<div><label class="lb">Байгууллагын хариу · ${dateStr(c.reply.t)}</label><div class="reply">${esc(c.reply.x)}</div></div>`:''}
@@ -1147,7 +1175,7 @@ async function complaintClick(e,m){
     const f=m.f; if(!f.name.trim()||!f.phone.trim()||!f.subj.trim()||f.body.trim().length<20){toast('Шаардлагатай талбаруудыг бөглөнө үү (дэлгэрэнгүй 20+ тэмдэгт)');return}
     if(!/^[0-9+ -]{6,20}$/.test(f.phone.trim())){toast('Утасны дугаараа шалгана уу');return}
     if(!f.ok){toast('Зөвшөөрлийн нүдийг чагтална уу');return}
-    m.c={code:(m.k==='t'?'TH-':'SH-')+rid().slice(0,6).toUpperCase(),k:m.k||'c',o:m.oid,t:Date.now(),name:f.name.trim(),phone:f.phone.trim(),email:f.email.trim(),type:f.type,staff:(f.staff||'').trim(),subj:f.subj.trim(),body:f.body.trim(),fee:20000,status:'pending'};
+    m.c={code:newInvoice(m.k),k:m.k||'c',o:m.oid,t:Date.now(),name:f.name.trim(),phone:f.phone.trim(),email:f.email.trim(),type:f.type,staff:(f.staff||'').trim(),subj:f.subj.trim(),body:f.body.trim(),fee:20000,status:'pending'};
     m.step=2;m.editing=false;renderComplaint(m);return;
   }
   if(e.target.closest('[data-edit]')){m.step=1;renderComplaint(m);return}
@@ -1272,7 +1300,7 @@ let meTab='letters';
 function letterCard(c,admin){
   const o=getOrg(c.o); const k=kOf(c); const s=cStatus(c);
   return `<div class="lt"><div class="hd"><span class="pill ${k==='t'?'kt':'kc'}">${KLBL[k]}</span><b>${esc(c.subj)}</b><span class="note" style="margin-left:auto">${esc(c.code)} · ${dateStr(c.t)}</span></div>
-    <div class="note">${esc(o?o.name:c.o)}</div>${trackHtml(c)}
+    <div class="note">${esc(o?o.name:c.o)}</div>${trackHtml(c)}${s==='pending'?payBox(c,true):''}
     ${c.reply&&c.reply.x?`<div class="reply"><b>Байгууллагын хариу</b> · ${dateStr(c.reply.t)}<br>${esc(c.reply.x)}</div>`:`<div class="note">${s==='sent'?'Байгууллагаас хариу хүлээгдэж байна.':s==='pending'?'Төлбөр баталгаажсаны дараа илгээгдэнэ.':''}</div>`}
     <div><button class="btn ghost" data-viewl="${esc(c.code)}">Албан бичиг харах</button></div></div>`;
 }
@@ -1314,23 +1342,27 @@ ${S.anon?'':`      <div><b>Хувийн мэдээлэл</b><div class="note">Г
     </div>
    </div></div>`;
 }
-let adm={tab:'letters',k:'all',st:'all',open:null};
+let adm={tab:'letters',k:'all',st:'all',open:null,q:''};
 function renderAdminPage(){
   const el=$('#pageAdmin');
   if(!S.isAdmin){el.innerHTML=`<div class="pg"><div class="pgh"><h1>Удирдлага</h1><button class="btn ghost" style="margin-left:auto" data-gomap>← Газрын зураг</button></div><div class="card box"><div class="empty">Энэ хуудас зөвхөн Шүүмж-ийн удирдлагад (хуудасны эзэмшигч, Editor эрхтэй хүн) нээгдэнэ.</div></div></div>`;return}
   const ae=document.activeElement; if(ae&&ae.id==='admReply')return; // don't wipe reply typing
+  const qFocus=ae&&ae.id==='admQ'; const qPos=qFocus?ae.selectionStart:0;
   const all=[];for(const [uid,items] of Object.entries(S.allComplaints))for(const c of Object.values(items||{}))all.push(Object.assign({uid},c));
   all.sort((a,b)=>b.t-a.t);
   const paid=all.filter(c=>['paid','sent','answered'].includes(cStatus(c)));
   const nRev=Object.values(S.reviewsByOrg).reduce((a,x)=>a+x.length,0);
   const users=new Set([...Object.keys(S.reviews),...Object.keys(S.reacts),...Object.keys(S.allComplaints)]).size;
-  const list=all.filter(c=>(adm.k==='all'||kOf(c)===adm.k)&&(adm.st==='all'||cStatus(c)===adm.st));
+  const qq=(adm.q||'').trim().toUpperCase().replace(/[\s-]/g,'');
+  const list=all.filter(c=>(adm.k==='all'||kOf(c)===adm.k)&&(adm.st==='all'||cStatus(c)===adm.st)&&(!qq||String(c.code).toUpperCase().replace(/-/g,'').includes(qq)||String(c.phone||'').includes(qq)||String(c.name||'').toUpperCase().includes(qq)));
   let body='';
   if(adm.tab==='letters'){
-    body=`<div class="tabs" style="flex-wrap:wrap;margin-bottom:8px">${[['all','Бүгд'],['c','Гомдол'],['t','Талархал']].map(([k,l])=>`<button class="tab ${adm.k===k?'on':''}" data-ak="${k}">${l}</button>`).join('')}<span style="width:12px"></span>${[['all','Бүх төлөв']].concat(STAT).map(([k,l])=>`<button class="tab ${adm.st===k?'on':''}" data-ast="${k}">${l}</button>`).join('')}</div>
+    const pend=all.filter(c=>cStatus(c)==='pending').length;
+    body=`<div class="admq"><input class="in" id="admQ" placeholder="🔍 Нэхэмжлэхийн дугаар (банкны гүйлгээний утга), утас эсвэл нэрээр хайх — ж: SH482913" value="${esc(adm.q||'')}">${pend?`<span class="pill" style="color:#fde68a;border-color:rgba(251,191,36,.5);white-space:nowrap">⏳ ${pend} төлбөр хүлээгдэж байна</span>`:''}</div>
+    <div class="tabs" style="flex-wrap:wrap;margin-bottom:8px">${[['all','Бүгд'],['c','Гомдол'],['t','Талархал']].map(([k,l])=>`<button class="tab ${adm.k===k?'on':''}" data-ak="${k}">${l}</button>`).join('')}<span style="width:12px"></span>${[['all','Бүх төлөв']].concat(STAT).map(([k,l])=>`<button class="tab ${adm.st===k?'on':''}" data-ast="${k}">${l}</button>`).join('')}</div>
     ${list.length?`<div style="overflow:auto"><table class="adm"><tr><th>Код / Огноо</th><th>Төрөл</th><th>Байгууллага</th><th>Иргэн</th><th>Гарчиг</th><th>Төлөв</th><th></th></tr>
     ${list.map(c=>{const o=getOrg(c.o);const id=c.uid+'|'+c.code;return `<tr><td><b>${esc(c.code)}</b><br><span class="note">${dateStr(c.t)}</span></td><td><span class="pill ${kOf(c)==='t'?'kt':'kc'}">${KLBL[kOf(c)]}</span></td><td>${esc(o?o.name:c.o)}</td><td>${esc(c.name)}<br><span class="note">${esc(c.phone)} ${esc(c.email||'')}</span></td><td><b>${esc(c.subj)}</b><br><span class="note">${esc(c.type)}</span></td>
-    <td><select class="in" data-ast2="${esc(id)}" style="min-width:170px">${STAT.map(([k,l])=>`<option value="${k}" ${cStatus(c)===k?'selected':''}>${l}</option>`).join('')}</select></td>
+    <td><select class="in" data-ast2="${esc(id)}" style="min-width:170px">${STAT.map(([k,l])=>`<option value="${k}" ${cStatus(c)===k?'selected':''}>${l}</option>`).join('')}</select>${cStatus(c)==='pending'?`<button class="btn" data-apaid="${esc(id)}" style="margin-top:6px;width:100%;background:#16a34a;border-color:#16a34a;padding:7px 10px">✅ ${fmt(FEE)}₮ орсон — баталгаажуулах</button>`:''}</td>
     <td><button class="btn ghost" data-aopen="${esc(id)}">${adm.open===id?'Хаах':'Нээх'}</button></td></tr>
     ${adm.open===id?`<tr><td colspan="7"><div class="grid2" style="align-items:start"><div class="letter" style="font-size:13px">${esc(letterText(c,o))}</div>
       <div style="display:flex;flex-direction:column;gap:8px"><label class="lb">Байгууллагаас ирсэн хариу (иргэнд харагдана)</label><textarea id="admReply" rows="8">${esc(c.reply&&c.reply.x||'')}</textarea>
@@ -1358,6 +1390,7 @@ function renderAdminPage(){
       <div class="tabs" style="margin-bottom:14px"><button class="tab ${adm.tab==='letters'?'on':''}" data-atab="letters">📨 Захидлууд</button><button class="tab ${adm.tab==='reviews'?'on':''}" data-atab="reviews">💬 Сэтгэгдэл (модерац)</button><button class="tab ${adm.tab==='rank'?'on':''}" data-atab="rank">📉 Муу үнэлгээтэй байгууллага</button></div>
       ${body}
     </div></div>`;
+  const qi=$('#admQ'); if(qi){qi.oninput=()=>{adm.q=qi.value;renderAdminPage()}; if(qFocus){qi.focus();try{qi.setSelectionRange(qPos,qPos)}catch(e){}}}
   el.querySelectorAll('[data-ast2]').forEach(sel=>sel.onchange=()=>{const [uid,code]=sel.dataset.ast2.split('|');const patch={status:sel.value};if(sel.value==='sent')patch.sentT=Date.now();adminUpdate(uid,code,patch)});
 }
 function findLetter(id){const [uid,code]=id.split('|');return (S.allComplaints[uid]||{})[code]}
@@ -1370,6 +1403,7 @@ document.addEventListener('click',async e=>{
   const at=e.target.closest('[data-atab]'); if(at){adm.tab=at.dataset.atab;renderAdminPage();return}
   const ak=e.target.closest('[data-ak]'); if(ak){adm.k=ak.dataset.ak;renderAdminPage();return}
   const as=e.target.closest('[data-ast]'); if(as){adm.st=as.dataset.ast;renderAdminPage();return}
+  const ap=e.target.closest('[data-apaid]'); if(ap){const [uid,code]=ap.dataset.apaid.split('|');ap.disabled=true;await adminUpdate(uid,code,{status:'paid',paidT:Date.now()});renderAdminPage();return}
   const ao=e.target.closest('[data-aopen]'); if(ao){adm.open=adm.open===ao.dataset.aopen?null:ao.dataset.aopen;renderAdminPage();return}
   const ah=e.target.closest('[data-ahide]'); if(ah){setHidden(ah.dataset.ahide,!S.hidden[ah.dataset.ahide]);return}
   const sr=e.target.closest('[data-asavereply]'); if(sr){const id=sr.dataset.asavereply;const x=$('#admReply').value.trim();if(!x){toast('Хариугаа бичнэ үү');return}const [uid,code]=id.split('|');$('#admReply').blur();await adminUpdate(uid,code,{reply:{x,t:Date.now()},status:'answered'});renderAdminPage();return}
