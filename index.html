@@ -196,6 +196,17 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .rvh .free{font-size:12px;font-weight:800;color:#86efac;border:1px solid rgba(34,197,94,.5);background:rgba(34,197,94,.1);border-radius:999px;padding:3px 10px;white-space:nowrap}
 .claimbtn{width:100%;margin-top:10px;padding:12px;font-size:14px;background:#16a34a!important;border-color:#16a34a!important;font-weight:700}
 .claimed{margin-top:10px;font-size:13px;color:#bbf7d0;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.4);border-radius:10px;padding:10px 12px}
+.lscroll{display:flex;flex-direction:column;gap:8px;max-height:318px;overflow-y:auto;padding-right:6px;scrollbar-width:thin;scrollbar-color:#2f3f63 transparent;overscroll-behavior:contain}
+.ltc{flex-shrink:0;padding:10px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);display:flex;flex-direction:column;gap:5px}
+.ltc .r1{display:flex;align-items:center;gap:8px;min-width:0}
+.ltc .r1 .sj{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ltc .r1 .cd{margin-left:auto;font-size:11px;color:var(--tx3);white-space:nowrap}
+.ltc .r2 .on{font-size:12px;color:var(--tx2);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ltc .r3{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ltc .pill{font-size:10.5px;padding:1px 7px}
+.mprog{display:flex;gap:3px}.mprog i{width:16px;height:4px;border-radius:2px;background:var(--line2)}.mprog i.on{background:var(--good)}
+.btn.mini{padding:5px 10px;font-size:12px;border-radius:8px}
+.btn.mini.pay{background:#16a34a;border-color:#16a34a}
 .lvlnote{font-size:12px;color:var(--tx3);margin:-4px 0 10px}
 .tab.privt{border-color:rgba(167,139,250,.55);color:#ddd6fe}
 .tab.privt.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
@@ -1465,10 +1476,16 @@ function renderPages(){ if(S.page==='me')renderMe(); else if(S.page==='admin')re
 let meTab='letters';
 function letterCard(c,admin){
   const o=getOrg(c.o); const k=kOf(c); const s=cStatus(c);
-  return `<div class="lt"><div class="hd"><span class="pill ${k==='t'?'kt':'kc'}">${KLBL[k]}</span><b>${esc(c.subj)}</b><span class="note" style="margin-left:auto">${esc(c.code)} · ${dateStr(c.t)}</span></div>
-    <div class="note">${esc(o?o.name:c.o)}</div>${trackHtml(c)}${s==='pending'?payBox(c,true):''}
-    ${c.reply&&c.reply.x?`<div class="reply"><b>Байгууллагын хариу</b> · ${dateStr(c.reply.t)}<br>${esc(c.reply.x)}</div>`:`<div class="note">${s==='sent'?'Байгууллагаас хариу хүлээгдэж байна.':s==='pending'?'Төлбөр баталгаажсаны дараа илгээгдэнэ.':''}</div>`}
-    <div><button class="btn ghost" data-viewl="${esc(c.code)}">Албан бичиг харах</button></div></div>`;
+  const st=s==='pending'&&c.claimT?'Төлбөр шалгагдаж байна':statLbl(s);
+  const col=s==='rejected'?'b':s==='pending'?'m':'g';
+  const idx=s==='rejected'?-1:Math.max(0,['pending','paid','sent','answered'].indexOf(s));
+  const prog=`<div class="mprog">${[0,1,2,3].map(i=>`<i class="${i<=idx?'on':''}"></i>`).join('')}</div>`;
+  const act=s==='pending'&&!c.claimT?`<button class="btn mini pay" data-viewl="${esc(c.code)}">💳 Төлөх</button>`:`<button class="btn ghost mini" data-viewl="${esc(c.code)}">Дэлгэрэнгүй</button>`;
+  return `<div class="ltc">
+    <div class="r1"><span class="pill ${k==='t'?'kt':'kc'}">${KLBL[k]}</span><b class="sj">${esc(c.subj)}</b><span class="cd">${esc(c.code)} · ${dateStr(c.t)}</span></div>
+    <div class="r2"><span class="on">${esc(o?o.name:c.o)}</span></div>
+    <div class="r3">${prog}<span class="pill ${col}">${esc(st)}</span>${c.reply&&c.reply.x?'<span class="pill g">💬 Хариу ирсэн</span>':''}<span style="margin-left:auto">${act}</span></div>
+  </div>`;
 }
 function renderMe(){
   const el=$('#pageMe'); {const ae=document.activeElement; if(ae&&el.contains(ae)&&/INPUT|TEXTAREA/.test(ae.tagName))return;}
@@ -1504,7 +1521,7 @@ ${(S.anon||S.guest)?'':`      <div><b>Хувийн мэдээлэл</b><div clas
       </div>
       <div class="card box">
         <div class="tabs" style="margin-bottom:12px"><button class="tab ${meTab==='letters'?'on':''}" data-metab="letters">📨 Миний захидлууд</button><button class="tab ${meTab==='reviews'?'on':''}" data-metab="reviews">★ Миний үнэлгээ</button></div>
-        ${meTab==='letters'?(letters.length?`<div style="display:flex;flex-direction:column;gap:10px">${letters.map(c=>letterCard(c)).join('')}</div>`:'<div class="empty">Та одоогоор гомдол, талархал илгээгээгүй байна. Газрын зураг дээр байгууллагаа сонгоод “Гомдол илгээх” эсвэл “Талархал илгээх” товчийг дарна уу.</div>')
+        ${meTab==='letters'?(letters.length?`<div class="lscroll">${letters.map(c=>letterCard(c)).join('')}</div>${letters.length>3?`<div class="note" style="text-align:center;margin-top:6px">↕ Нийт ${letters.length} захидал — гүйлгэж харна уу</div>`:''}`:'<div class="empty">Та одоогоор гомдол, талархал илгээгээгүй байна. Газрын зураг дээр байгууллагаа сонгоод “Гомдол илгээх” эсвэл “Талархал илгээх” товчийг дарна уу.</div>')
         :(myRev.length?`<div class="orgs">${myRev.map(r=>{const o=getOrg(r.oid);return o?`<div class="org s${r.s>=4?'g':r.s===3?'m':'b'}" data-org="${esc(r.oid)}"><div class="nm"><b>${o.cat==='Сургууль'?'🏫 ':o.cat==='Цэцэрлэг'?'🧸 ':o.cat==='Эмнэлэг'?'🏥 ':''}${esc(o.name)}</b><small>${dateStr(r.t)} · ${esc(String(r.x||'').slice(0,90))}</small></div><div class="meta"><div class="st">${starStr(r.s)}</div></div></div>`:''}).join('')}</div>`:'<div class="empty">Та одоогоор үнэлгээ өгөөгүй байна.</div>')}
       </div>
     </div>
