@@ -1385,7 +1385,7 @@ function authCard(){
   return `<div class="lt" style="gap:10px"><b style="font-size:16px">${auMode==='signup'?'Бүртгүүлэх':'Нэвтрэх'}</b>
     <button class="btn" data-au="google" style="background:#fff;color:#111;border-color:#fff">G&nbsp; Google-ээр нэвтрэх</button>
     <div class="note" style="text-align:center">эсвэл и-мэйлээр</div>
-    ${auMode==='signup'?'<input class="in" id="auName" placeholder="Нэр (бусдад харагдана)" maxlength="60">':''}
+    ${auMode==='signup'?'<div><input class="in" id="auName" placeholder="Нэр эсвэл нууц нэр" maxlength="40"><div class="note" style="margin-top:4px">🕶 Жинхэнэ нэрээ бичих албагүй — нууц нэр (nickname) бичиж болно. Энэ нэр зөвхөн та “Нэрээ харуулах”-ыг сонгосон сэтгэгдэл дээр гарна.</div></div>':''}
     <input class="in" id="auEmail" type="email" placeholder="И-мэйл" autocomplete="email">
     <input class="in" id="auPw" type="password" placeholder="Нууц үг (6+ тэмдэгт)" autocomplete="${auMode==='signup'?'new-password':'current-password'}">
     <button class="btn" data-au="${auMode==='signup'?'signup':'login'}">${auMode==='signup'?'Бүртгүүлэх':'Нэвтрэх'}</button>
@@ -1400,7 +1400,7 @@ document.addEventListener('click',async e=>{
   try{
     if(k==='google')await A.google();
     else if(k==='login')await A.login(em.trim(),pw);
-    else if(k==='signup'){const nm=($('#auName')||{}).value||'';if(nm.trim().length<2){toast('Нэрээ бичнэ үү');return}await A.signup(nm.trim(),em.trim(),pw)}
+    else if(k==='signup'){const nm=($('#auName')||{}).value||'';if(nm.trim().length<2){toast('Нэр эсвэл нууц нэрээ бичнэ үү');return}await A.signup(nm.trim(),em.trim(),pw)}
     else if(k==='reset'){if(!em){toast('И-мэйлээ бичээд дахин дарна уу');return}await A.reset(em.trim());toast('Нууц үг сэргээх холбоос и-мэйлээр илгээгдлээ');return}
     else if(k==='logout'){await A.logout()}
     location.reload();
@@ -1433,6 +1433,8 @@ function renderMe(){
         <div><div style="font-size:18px;font-weight:700">${esc(nm)}</div><div class="note">${signed?'✅ Нэвтэрсэн':'Нэвтрээгүй'}${S.isAdmin?' · Удирдлага':''}</div></div></div>
       ${window.SHUUMJ_AUTH?authCard():''}
       ${signed||window.SHUUMJ_AUTH?'':`<div class="banner warn">Шүүмж-д <b>Claude бүртгэлээрээ</b> нэвтэрнэ. Энэ хуудсыг claude.ai дээр нэвтэрсэн үедээ нээвэл таны үнэлгээ, захидал хадгалагдаж, бусад хэрэглэгчидтэй хуваалцагдана. Одоогоор таны мэдээлэл зөвхөн энэ цонхонд түр хадгалагдана.</div>`}
+${(S.anon||S.guest||!window.SHUUMJ_AUTH)?'':`      <div class="lt" style="gap:8px"><b>🕶 Нийтэд харагдах нэр</b><div class="note">Жинхэнэ нэр эсвэл нууц нэр (nickname) байж болно. Зөвхөн “Нэрээ харуулах”-ыг сонгосон сэтгэгдэл дээр гарна.</div>
+        <div style="display:flex;gap:8px"><input class="in" id="nickIn" maxlength="40" value="${esc(S.meName||'')}" placeholder="Жишээ: Шударга иргэн"><button class="btn" data-savenick>Хадгалах</button></div></div>`}
 ${(S.anon||S.guest)?'':`      <div><b>Хувийн мэдээлэл</b><div class="note">Гомдол, талархал илгээхэд автоматаар бөглөгдөнө. Зөвхөн танд харагдана.</div></div>
       <div><label class="lb">Овог нэр</label><input class="in" id="pfName" value="${esc(pr.name||S.meName||'')}" maxlength="80"></div>
       <div><label class="lb">Утас</label><input class="in" id="pfPhone" value="${esc(pr.phone||'')}" maxlength="20" inputmode="tel"></div>
@@ -1518,6 +1520,8 @@ document.addEventListener('click',async e=>{
   if(e.target.closest('.modal'))return;
   if(e.target.closest('[data-gomap]')){location.hash=current;return}
   const mt=e.target.closest('[data-metab]'); if(mt){meTab=mt.dataset.metab;renderMe();return}
+  if(e.target.closest('[data-savenick]')){const v=$('#nickIn').value.trim();if(v.length<2){toast('2-оос дээш тэмдэгт бичнэ үү');return}
+    try{await window.SHUUMJ_AUTH.setNick(v);S.meName=v;S.names[S.uid]=v;$('#myLbl').textContent=v;toast('Нэр хадгалагдлаа: '+v);renderMe();refresh()}catch(err){toast('Хадгалж чадсангүй')}return}
   if(e.target.closest('[data-savepf]')){saveProfile({name:$('#pfName').value.trim(),phone:$('#pfPhone').value.trim(),email:$('#pfEmail').value.trim(),addr:$('#pfAddr').value.trim()});renderMe();return}
   const vl=e.target.closest('[data-viewl]'); if(vl){const c=S.myComplaints[vl.dataset.viewl];if(c)openModal({kind:'complaint',k:kOf(c),oid:c.o,step:3,c});return}
   const at=e.target.closest('[data-atab]'); if(at){adm.tab=at.dataset.atab;renderAdminPage();return}

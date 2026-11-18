@@ -108,6 +108,8 @@ window.SHUUMJ_AUTH = {
     await publishProfile(r.user);
   },
   reset: email => sendPasswordResetEmail(auth, email),
+  // public display name (real name or nickname)
+  setNick: async name => { const u = auth.currentUser; if (!u || u.isAnonymous) throw new Error('not signed in'); await updateProfile(u, { displayName: name }); await publishProfile(u); },
   logout: () => signOut(auth)
 };
 
