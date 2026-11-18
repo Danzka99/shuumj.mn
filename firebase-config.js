@@ -12,4 +12,4 @@ window.SHUUMJ_FIREBASE = {
 
 // Удирдлагын (админ) и-мэйл хаягууд — эдгээр хаягаар нэвтэрсэн хүнд "⚙ Удирдлага" хуудас нээгдэнэ.
 // firestore.rules доторх жагсаалттай ИЖИЛ байх ёстой.
-window.SHUUMJ_ADMINS = ["ADMIN_EMAIL@example.com"];
+window.SHUUMJ_ADMINS = ["wildhaskap@gmail.com"];
