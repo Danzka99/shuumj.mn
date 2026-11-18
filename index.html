@@ -348,8 +348,8 @@ footer{color:var(--tx3);font-size:11.5px;padding:10px 0 30px;border-top:1px soli
 <div class="page on" id="pageMap">
   <div class="strip">
     <div class="step"><b>1</b>Газрын зураг дээр дарж аймаг, сум, дүүрэг, хороогоо сонго</div>
-    <div class="step"><b>2</b>Байгууллагаа олж од, сэтгэгдэл, 👍 / 👎 үлдээ</div>
-    <div class="step"><b>3</b>Бидээр дамжуулан албан гомдол эсвэл талархал илгээ — 20,000₮</div>
+    <div class="step"><b>2</b>Байгууллагаа олж, одоор үнэлж, сэтгэгдэл, 👍 / 👎 үлдээ</div>
+    <div class="step"><b>3</b>Биднээр дамжуулан албан гомдол эсвэл талархал илгээх боломжтой — <span class="feeTxt">30,000₮</span></div>
   </div>
   <div id="modeBanner"></div>
   <div class="ticker">
@@ -1100,8 +1100,8 @@ function renderOrgModal(m){
       </div>
     </div>
     <div class="cbtns">
-      <button class="cbtn" data-complain="c"><span style="font-size:24px">📨</span><span><b>Албан гомдол илгээх</b><br><span class="note" style="color:#fecaca">Албан бичиг болгон хүргүүлж, хариуг хянана</span></span><span class="p">20,000₮</span></button>
-      <button class="cbtn thx" data-complain="t"><span style="font-size:24px">🙏</span><span><b>Талархал илгээх</b><br><span class="note" style="color:#bbf7d0">Сайн ажилласан албан хаагчдад талархлаа хүргүүлнэ</span></span><span class="p">20,000₮</span></button>
+      <button class="cbtn" data-complain="c"><span style="font-size:24px">📨</span><span><b>Албан гомдол илгээх</b><br><span class="note" style="color:#fecaca">Албан бичиг болгон хүргүүлж, хариуг хянана</span></span><span class="p">${fmt(FEE)}₮</span></button>
+      <button class="cbtn thx" data-complain="t"><span style="font-size:24px">🙏</span><span><b>Талархал илгээх</b><br><span class="note" style="color:#bbf7d0">Сайн ажилласан албан хаагчдад талархлаа хүргүүлнэ</span></span><span class="p">${fmt(FEE)}₮</span></button>
     </div>
     <div class="note" style="margin-top:-8px">🔒 Гомдол, талархал илгээхэд нэвтрэх шаардлагатай. Таны хувийн мэдээлэл хэнд ч харагдахгүй тул санаа зоволтгүй.</div>
     <div class="form">
@@ -1214,7 +1214,8 @@ function trackHtml(c){
   const idx=Math.max(0,['pending','paid','sent','answered'].indexOf(s));
   return `<div class="track">${['Бүртгэгдсэн','Төлбөр','Илгээсэн','Хариу'].map((t,i)=>`<div class="${i<=idx?'on':''}">${t}</div>`).join('')}</div>`;
 }
-const FEE=window.SHUUMJ_FEE||20000;
+const FEE=window.SHUUMJ_FEE||30000;
+document.querySelectorAll(".feeTxt").forEach(e=>{e.textContent=fmt(FEE)+"₮"});
 function newInvoice(k){
   const mine=new Set(Object.keys(S.myComplaints||{}));
   let c; do{ c=(k==='t'?'TH':'SH')+String(Math.floor(100000+Math.random()*900000)); }while(mine.has(c));
@@ -1275,7 +1276,7 @@ async function complaintClick(e,m){
     const f=m.f; if(!f.name.trim()||!f.phone.trim()||!f.subj.trim()||f.body.trim().length<20){toast('Шаардлагатай талбаруудыг бөглөнө үү (дэлгэрэнгүй 20+ тэмдэгт)');return}
     if(!/^[0-9+ -]{6,20}$/.test(f.phone.trim())){toast('Утасны дугаараа шалгана уу');return}
     if(!f.ok){toast('Зөвшөөрлийн нүдийг чагтална уу');return}
-    m.c={code:newInvoice(m.k),k:m.k||'c',o:m.oid,t:Date.now(),name:f.name.trim(),phone:f.phone.trim(),email:f.email.trim(),type:f.type,staff:(f.staff||'').trim(),subj:f.subj.trim(),body:f.body.trim(),fee:20000,status:'pending'};
+    m.c={code:newInvoice(m.k),k:m.k||'c',o:m.oid,t:Date.now(),name:f.name.trim(),phone:f.phone.trim(),email:f.email.trim(),type:f.type,staff:(f.staff||'').trim(),subj:f.subj.trim(),body:f.body.trim(),fee:FEE,status:'pending'};
     m.step=2;m.editing=false;renderComplaint(m);return;
   }
   if(e.target.closest('[data-edit]')){m.step=1;renderComplaint(m);return}
@@ -1290,12 +1291,13 @@ function feedTitle(id){
   if(!id||id==='MN')return 'Шинэ сэтгэгдлүүд';
   const t=typeOf(id);
   if(t==='capital')return nameOf(id)+' хотын сэтгэгдлүүд';
-  if(t==='soum'&&isCentre(id)&&CTR[CTR_SOUM[id]][1]!==nameOf(id))return nameOf(id)+' сумын ('+CTR[CTR_SOUM[id]][1]+' хот) сэтгэгдлүүд';
+  if(t==='soum'&&isCentre(id)){const a=CTR_SOUM[id];return '★ '+nameOf(a)+' аймгийн төв '+CTR[a][1]+(CTR[a][1]!==nameOf(id)?' ('+nameOf(id)+' сум)':'')+' · сэтгэгдлүүд'}
   return gen(id)+' сэтгэгдлүүд';
 }
 function renderFeed(){
   const area=current||'MN';
-  const all=[];for(const arr of Object.values(S.reviewsByOrg))for(const r of arr){if(area==='MN'||isUnder(r.oid.slice(0,r.oid.indexOf('.')),area))all.push(r)}
+  const ctrOf=isCentre(area)?CTR_SOUM[area]:null; // aimag centre: also the aimag-level organisations located there
+  const all=[];for(const arr of Object.values(S.reviewsByOrg))for(const r of arr){const ra=r.oid.slice(0,r.oid.indexOf('.'));if(area==='MN'||isUnder(ra,area)||(ctrOf&&ra===ctrOf))all.push(r)}
   all.sort((a,b)=>b.t-a.t); const list=all.slice(0,40);
   resolveNames(list.filter(r=>!r.a).map(r=>r.uid));
   const sig=area+'|'+list.map(r=>r.key+r.t+(S.names[r.uid]||'')).join(',');
@@ -1304,7 +1306,7 @@ function renderFeed(){
   $('#feedN').textContent=all.length?`· нийт ${all.length}`:'';
   const el=$('#feed');
   if(areaChanged)el.scrollTop=0;
-  if(!list.length&&area!=='MN'){el.innerHTML=`<div class="empty">${esc(feedTitle(area).replace(/ сэтгэгдлүүд$/,''))} байгууллагуудад одоогоор сэтгэгдэл алга. Баруун талын жагсаалтаас байгууллагаа сонгоод анхны сэтгэгдлээ үлдээгээрэй.</div>`;el.style.height='auto';$('#feedN').textContent='';return}
+  if(!list.length&&area!=='MN'){el.innerHTML=`<div class="empty">Энэ бүсийн байгууллагуудад одоогоор сэтгэгдэл алга. Баруун талын жагсаалтаас байгууллагаа сонгоод анхны сэтгэгдлээ үлдээгээрэй.</div>`;el.style.height='auto';$('#feedN').textContent='';return}
   if(!list.length){el.innerHTML='<div class="empty">Одоогоор сэтгэгдэл алга. Газрын зураг дээрээс байгууллагаа сонгоод анхны сэтгэгдлээ үлдээгээрэй.</div>';el.style.height='auto';return}
   el.style.height='';
   const item=r=>{const o=getOrg(r.oid);const c=r.s>=4?'g':r.s===3?'m':'b';const nm=r.a?'Нэргүй иргэн':(r.uid===S.uid?'Та':(S.names[r.uid]||'Иргэн'));
@@ -1500,7 +1502,7 @@ function renderAdminPage(){
       <div class="card kpi"><div class="l">Гомдол</div><div class="v" style="color:#fca5a5">${all.filter(c=>kOf(c)==='c').length}</div></div>
       <div class="card kpi"><div class="l">Талархал</div><div class="v" style="color:#86efac">${all.filter(c=>kOf(c)==='t').length}</div></div>
       <div class="card kpi"><div class="l">Төлбөр хүлээгдэж буй</div><div class="v" style="color:var(--mid)">${all.filter(c=>cStatus(c)==='pending').length}</div></div>
-      <div class="card kpi"><div class="l">Орлого</div><div class="v">${fmt(paid.length*20000)}₮</div></div>
+      <div class="card kpi"><div class="l">Орлого</div><div class="v">${fmt(paid.reduce((a,c)=>a+(+c.fee||FEE),0))}₮</div></div>
       <div class="card kpi"><div class="l">Сэтгэгдэл</div><div class="v">${nRev}</div></div>
       <div class="card kpi"><div class="l">Хэрэглэгч</div><div class="v">${users}</div></div>
     </div>
