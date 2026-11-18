@@ -734,7 +734,7 @@ async function initDb(){
 }
 function renderBanner(){
   const el=$('#modeBanner');
-  if(!S.live){el.innerHTML='<div class="banner warn" style="margin-bottom:14px">Туршилтын горим: энэ харагдац дээр хуваалцсан өгөгдлийн сан холбогдоогүй тул таны үнэлгээ зөвхөн энэ цонхонд хадгалагдана. Claude-д нэвтэрсэн үед бүх хэрэглэгчийн үнэлгээ нэг дор харагдана.</div>';return}
+  if(!S.live){el.innerHTML='<div class="banner warn" style="margin-bottom:14px">Туршилтын горим: өгөгдлийн сан хараахан холбогдоогүй байна. Таны үнэлгээ зөвхөн энэ браузерт түр хадгалагдана. Удахгүй бүх хэрэглэгчийн үнэлгээ нэг дор харагдана.</div>';return}
   if(S.anon){el.innerHTML='<div class="banner" style="margin-bottom:14px">Үнэлгээ, сэтгэгдэл бичих, гомдол илгээхийн тулд <a href="#me" style="color:#fff;font-weight:700">нэвтэрнэ үү →</a> Нэвтрэхгүйгээр бүх үнэлгээг үзэж болно.</div>';return}
   if(S.slow){el.innerHTML='<div class="banner warn" style="margin-bottom:14px">Өгөгдөл ачааллаж удаж байна — харагдаж буй мэдээлэл хуучирсан байж магадгүй.</div>';return}
   if(!S.canWrite){el.innerHTML='<div class="banner" style="margin-bottom:14px">Та үзэх эрхтэй байна. Үнэлгээ бичих, гомдол илгээхийн тулд хуудасны эзэмшигчээс Contributor эрх аваарай.</div>';return}
