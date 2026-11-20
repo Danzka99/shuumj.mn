@@ -62,7 +62,8 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .results.open{display:block}
 .res{padding:9px 14px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:10px;align-items:center}
 .res:hover,.res.on{background:var(--panel2)}
-.res .k{font-size:11px;color:var(--tx3);margin-left:auto;white-space:nowrap}
+.res .k{font-size:11px;color:var(--tx3);margin-left:auto;text-align:right;max-width:46%;flex:none}
+.res.more{font-size:12px;color:var(--tx3);cursor:default;background:none!important}
 .hbtn{height:40px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--bg2);white-space:nowrap}
 .hbtn:hover{border-color:var(--acc)}
 .hbtn.admin{border-color:#7c3aed;color:#c4b5fd}
@@ -414,6 +415,10 @@ html,body{overflow-x:hidden}
   .hdr{height:56px;gap:8px}
   .logo{font-size:17px;gap:8px}.logo small{display:none}.logo .mark{width:34px;height:34px}
   .search input{height:36px;font-size:16px;padding:0 10px 0 30px}.search .ico{left:10px;top:8px}
+  .hdr{position:relative}
+  .search:focus-within{position:absolute;left:0;right:0;top:10px;max-width:none;z-index:60}
+  .results{position:fixed;left:10px;right:10px;top:60px;max-height:72vh;z-index:60}
+  .res{flex-wrap:wrap;gap:4px 10px;padding:10px 12px}.res>span:not(.k){flex:1;min-width:0}.res .k{max-width:none;width:100%;text-align:left;margin-left:26px}
   .hbtn{height:36px;padding:0 10px;font-size:14px}
   .strip{gap:6px;margin:10px 0}
   .step{min-width:100%;padding:7px 10px;font-size:12.5px;gap:8px}.step b{min-width:22px;height:22px;font-size:12px}
@@ -1787,23 +1792,35 @@ function renderAddOrg(m){
 
 /* ---------- search ---------- */
 let INDEX=null;
+const TR={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'j','з':'z','и':'i','й':'i','к':'k','л':'l','м':'m','н':'n','о':'u','ө':'u','п':'p','р':'r','с':'s','т':'t','у':'u','ү':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sh','ъ':'','ы':'i','ь':'i','э':'e','ю':'yu','я':'ya'};
+// хайлтын түлхүүр: кирилл/латин, о/ө/у/ү, х/kh ялгахгүй
+function skey(t){t=String(t||'').toLowerCase();let o='';for(const ch of t)o+=(TR[ch]!==undefined?TR[ch]:ch);
+  return o.replace(/kh/g,'h').replace(/o/g,'u').replace(/[wv]/g,'v').replace(/y/g,'i').replace(/ii+/g,'i').replace(/[^a-z0-9]+/g,' ')}
+function areaPath(a){const out=[];let x=a;while(x&&x!=='MN'){out.push(nameOf(x));x=parentOf(x)}return out}
+function locLbl(a){if(!a||a==='MN')return 'Монгол Улс';const p=areaPath(a);return p.slice(0,2).reverse().join(', ')}
 function buildIndex(){
-  INDEX=[];
-  for(const [id,[n,,t]] of Object.entries(U)){INDEX.push({k:'a',id,n,l:n.toLowerCase(),sub:(TYPE_LBL[t]||'')+(parentOf(id)&&parentOf(id)!=='MN'?' · '+nameOf(parentOf(id)):'')});
-    for(const o of tmplOrgs(id))INDEX.push({k:'o',id:o.id,n:o.name,l:o.name.toLowerCase(),sub:o.cat});}
-  for(const o of tmplOrgs('MN'))INDEX.push({k:'o',id:o.id,n:o.name,l:o.name.toLowerCase(),sub:o.cat});
+  INDEX=[];const seen=new Set();
+  const addOrg=o=>{if(seen.has(o.id))return;seen.add(o.id);const loc=o.area==='MN'?'Монгол Улс':locLbl(o.area);
+    INDEX.push({k:'o',id:o.id,n:o.name,nk:skey(o.name),l:skey(o.name+' '+o.cat+' '+areaPath(o.area).join(' ')),sub:o.cat+' · '+loc});};
+  for(const [id,[n,,t]] of Object.entries(U)){if(id==='MN')continue;const lbl=TYPE_LBL[t]||'';const par=parentOf(id);
+    INDEX.push({k:'a',id,n,nk:skey(n),l:skey(n+' '+lbl+' '+areaPath(par).join(' ')),sub:lbl+(par&&par!=='MN'?' · '+locLbl(par):'')});
+    for(const o of tmplOrgs(id))addOrg(o);}
+  for(const o of tmplOrgs('MN'))addOrg(o);
 }
 const qEl=$('#q'),resEl=$('#results'); let hits=[],sel=0;
 qEl.addEventListener('input',()=>{
-  const q=qEl.value.trim().toLowerCase(); if(q.length<2){closeSearch();return}
+  const raw=qEl.value.trim(); const q=skey(raw).trim(); if(raw.length<2||!q){closeSearch();return}
   if(!INDEX)buildIndex();
-  const extra=Object.values(S.added).filter(o=>!S.hidden[o.id]).map(o=>({k:isPriv(o)?'p':'o',id:o.id,n:o.name,l:(o.name+' '+o.cat+' '+nameOf(o.area)+' '+(o.addr||'')).toLowerCase(),sub:o.cat+' · '+(o.area==='MN'?'Монгол Улс':(typeOf(o.area)==='khoroo'||typeOf(o.area)==='bag'?nameOf(parentOf(o.area))+', ':'')+nameOf(o.area)),ic:orgIcon(o)}));
-  const words=q.split(/\s+/);
-  hits=INDEX.concat(extra).filter(x=>words.every(w=>x.l.includes(w)));
-  const rk={p:0,a:1,o:2};
-  hits.sort((a,b)=>(rk[a.k]-rk[b.k])||(a.l.startsWith(q)?-1:0)-(b.l.startsWith(q)?-1:0)||a.n.length-b.n.length);
-  hits=hits.slice(0,30);sel=0;
-  resEl.innerHTML=hits.length?hits.map((h,i)=>`<div class="res ${i===0?'on':''}" data-i="${i}">${h.k==='a'?'📍':h.ic||'🏛 '} <span>${esc(h.n)}</span><span class="k">${esc(h.sub)}</span></div>`).join(''):'<div class="res">Илэрц алга</div>';
+  const extra=Object.values(S.added).filter(o=>!S.hidden[o.id]).map(o=>({k:isPriv(o)?'p':'o',id:o.id,n:o.name,nk:skey(o.name),l:skey(o.name+' '+o.cat+' '+areaPath(o.area).join(' ')+' '+(o.addr||'')),sub:o.cat+' · '+locLbl(o.area),ic:orgIcon(o)}));
+  const words=q.split(/\s+/).filter(Boolean);
+  hits=INDEX.filter(x=>!S.hidden[x.id]).concat(extra).filter(x=>words.every(w=>x.l.includes(w)));
+  const rk={a:0,p:1,o:2};
+  const nameAll=x=>words.every(w=>x.nk.includes(w))?0:1;
+  const starts=x=>x.nk.startsWith(q)?0:1;
+  hits.forEach(x=>{x._s=nameAll(x)*100+starts(x)*10+rk[x.k]});
+  hits.sort((a,b)=>(a._s-b._s)||a.n.length-b.n.length);
+  const total=hits.length; hits=hits.slice(0,30);sel=0;
+  resEl.innerHTML=hits.length?hits.map((h,i)=>`<div class="res ${i===0?'on':''}" data-i="${i}">${h.k==='a'?'📍':h.ic||'🏛 '} <span>${esc(h.n)}</span><span class="k">${esc(h.sub)}</span></div>`).join('')+(total>30?`<div class="res more">… нийт ${total} илэрц. Үгээ нэмж нарийсгана уу (ж: “Завхан сургууль”)</div>`:''):'<div class="res more">Илэрц алга. Өөр үгээр хайгаад үзээрэй (ж: “Улиастай”, “цагдаа”, “zavkhan”)</div>';
   resEl.classList.add('open');
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&(e.target.id==='pvName'||e.target.id==='pvAddr')){const b=document.querySelector('[data-addpriv]');if(b)b.click()}});
