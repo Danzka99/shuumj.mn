@@ -817,7 +817,8 @@ function recompute(){
   S.orgStats=os;S.areaStats=as;S.reviewsByOrg=rbo;S.revReact=rr;
 }
 function score(st){
-  if(!st)return null; const v=st.l+st.d; const w=v*0.5; if(st.n+w===0)return null;
+  if(!st||!st.n)return null; // зөвхөн лайк дангаараа хувь гаргахгүй — дор хаяж 1 одтой үнэлгээ хэрэгтэй
+  const v=st.l+st.d; const w=v*0.5;
   const likeStar=v?1+4*(st.l/v):0;
   return (st.s+likeStar*w)/(st.n+w);
 }
@@ -1175,7 +1176,7 @@ function scoreBox(st,ovPct){
 function ovEditor(kind,id){
   if(!S.isAdmin)return '';
   const cur=kind==='a'?ovA(id):ovO(id);
-  return `<div class="oved"><span>⚙ Хувь тохируулах</span><input class="in" type="number" min="0" max="100" step="1" id="ov_${kind}" value="${cur==null?'':cur}" placeholder="авто"><span>%</span><button class="btn" data-ovsave="${kind}|${esc(id)}">Хадгалах</button>${cur!=null?`<button class="btn ghost" data-ovclear="${kind}|${esc(id)}">Автомат болгох</button>`:''}</div>`;
+  return `<div class="oved"><span>⚙ Хувь тохируулах</span><input class="in" type="number" min="0" max="100" step="1" id="ov_${kind}" value="${cur==null?'':cur}" placeholder="авто"><span>%</span><button class="btn" data-ovsave="${kind}|${esc(id)}">Хадгалах</button>${kind==='a'&&id!=='MN'?`<button class="btn ghost" data-rsarea="${esc(id)}" style="margin-left:auto">♻ Эхнээс</button>`:''}${cur!=null?`<button class="btn ghost" data-ovclear="${kind}|${esc(id)}">Автомат болгох</button>`:''}</div>`;
 }
 function orgRow(o,showArea,noParent){
   const par=(!noParent&&o.parent)?getOrg(o.parent):null;
@@ -1380,6 +1381,7 @@ document.addEventListener('click',async e=>{
     if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
     if(inp.value.trim()===''){await setOverride(k,id,null);renderAdminPage();return}
     if(isNaN(v)||v<0||v>100){toast('0–100 хооронд тоо оруулна уу');return} await setOverride(k,id,v);renderAdminPage();return}
+  const rsp=e.target.closest('#panel [data-rsarea]'); if(rsp){e.preventDefault();e.stopPropagation();if(rsp.dataset.armed!=='1'){rsp.dataset.armed='1';rsp.textContent='Дахин дарж батлах';rsp.classList.add('danger');setTimeout(()=>{if(rsp.isConnected){rsp.dataset.armed='';rsp.textContent='♻ Эхнээс';rsp.classList.remove('danger')}},3500);return}await adminReset(rsp.dataset.rsarea);renderPanel();return}
   const cl=e.target.closest('[data-ovclear]'); if(cl){e.preventDefault();e.stopPropagation();if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();const [k,id]=cl.dataset.ovclear.split('|');await setOverride(k,id,null);renderAdminPage();renderPanel();return}
   const mb=e.target.closest('[data-rmenu]'); if(mb){e.preventDefault();e.stopPropagation();const was=RMF&&RMF._btn===mb;closeRmf();if(was)return;
     const src=mb.parentElement.querySelector('.rmpop');const f=document.createElement('div');f.className='rmfloat';f.innerHTML=src?src.innerHTML:'';f._btn=mb;document.body.appendChild(f);RMF=f;
