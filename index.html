@@ -1801,10 +1801,11 @@ function skey(t){t=String(t||'').toLowerCase();let o='';for(const ch of t)o+=(TR
   return o.replace(/kh/g,'h').replace(/o/g,'u').replace(/[wv]/g,'v').replace(/y/g,'i').replace(/ii+/g,'i').replace(/[^a-z0-9]+/g,' ')}
 function areaPath(a){const out=[];let x=a;while(x&&x!=='MN'){out.push(nameOf(x));x=parentOf(x)}return out}
 function locLbl(a){if(!a||a==='MN')return 'Монгол Улс';const p=areaPath(a);return p.slice(0,2).reverse().join(', ')}
+const ALIAS={'Газар':'газрын алба газрын харилцаа газрын даамал кадастр','Өмч':'өмчийн алба өмчийн харилцаа','Нийгмийн даатгал':'ндш ндх','Цагдаа':'цагдаагийн','Эмнэлэг':'эмнэлгийн'};
 function buildIndex(){
   INDEX=[];const seen=new Set();
   const addOrg=o=>{if(seen.has(o.id))return;seen.add(o.id);const loc=o.area==='MN'?'Монгол Улс':locLbl(o.area);
-    INDEX.push({k:'o',id:o.id,n:o.name,nk:skey(o.name),l:skey(o.name+' '+o.cat+' '+areaPath(o.area).join(' ')),sub:o.cat+' · '+loc});};
+    INDEX.push({k:'o',id:o.id,n:o.name,nk:skey(o.name),l:skey(o.name+' '+o.cat+' '+(ALIAS[o.cat]||'')+' '+areaPath(o.area).join(' ')),sub:o.cat+' · '+loc});};
   for(const [id,[n,,t]] of Object.entries(U)){if(id==='MN')continue;const lbl=TYPE_LBL[t]||'';const par=parentOf(id);
     INDEX.push({k:'a',id,n,nk:skey(n),l:skey(n+' '+lbl+' '+areaPath(par).join(' ')),sub:lbl+(par&&par!=='MN'?' · '+locLbl(par):'')});
     for(const o of tmplOrgs(id))addOrg(o);}
