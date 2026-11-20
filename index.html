@@ -198,6 +198,8 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .lsteps span{font-size:12px;color:var(--tx2);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px;display:flex;gap:7px;align-items:flex-start;line-height:1.35}
 .lsteps b{flex:none;width:20px;height:20px;border-radius:6px;background:var(--panel2);color:var(--acc2);display:grid;place-items:center;font-size:11px}
 @media (max-width:640px){.lsteps{grid-template-columns:1fr}}
+.sech{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:-6px}.sech .note{font-weight:500}
+.rvh b{font-size:15px}
 .rvh{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .rvh .free{font-size:12px;font-weight:800;color:#86efac;border:1px solid rgba(34,197,94,.5);background:rgba(34,197,94,.1);border-radius:999px;padding:3px 10px;white-space:nowrap}
 .claimbtn{width:100%;margin-top:10px;padding:12px;font-size:14px;background:#16a34a!important;border-color:#16a34a!important;font-weight:700}
@@ -446,10 +448,10 @@ html,body{overflow-x:hidden}
   <div class="strip">
     <div class="step"><b>1</b>Газрын зураг дээр дарж аймаг, сум, дүүрэг, хороогоо сонго</div>
     <div class="step"><b>2</b>Байгууллагаа олж, одоор үнэлж, сэтгэгдэл, 👍 / 👎 үлдээ</div>
-    <div class="step"><b>3</b>Биднээр дамжуулан албан гомдол эсвэл талархал илгээх боломжтой — <span class="feeTxt">30,000₮</span></div>
+    <div class="step" id="step3"><b>3</b>Сэтгэгдэл бичих үнэ төлбөргүй — таны хэн болох нууц хэвээр</div>
   </div>
   <div id="modeBanner"></div>
-  <div class="ticker">
+  <div class="ticker" id="tickerBox">
     <div class="tk1" id="tk1">
       <div class="lab1" id="tkLab">🙏 ТАЛАРХАЛ</div>
       <div class="win1" id="tkWin"></div>
@@ -1204,6 +1206,7 @@ function renderOrgModal(m){
   const rr=(S.reacts[S.uid]||{r:{}}).r||{};
   modal.innerHTML=`<div class="mh"><div style="flex:1;min-width:0"><div class="kind">${esc(o.cat)}</div><h2>${esc(o.name)}</h2><div class="path">${esc(path)}</div>${o.addr?`<div class="path" style="margin-top:4px;color:#ddd6fe">📍 ${esc(o.addr)}</div>`:''}${isPriv(o)&&!o.addr&&o.by===S.uid?`<div style="margin-top:6px;display:flex;gap:6px"><input class="in" id="setAddr" maxlength="200" placeholder="📍 Байршил нэмэх" style="padding:6px 10px"><button class="btn" data-setaddr style="padding:6px 12px">Хадгалах</button></div>`:''}${parO?`<div class="path" style="margin-top:4px">↳ Харьяа: <a href="#" data-openorg="${esc(parO.id)}" style="color:#fde68a;text-decoration:none">${esc(parO.name)}</a></div>`:''}${(()=>{const ch=(KIDS[o.area]||[]).flatMap(k=>tmplOrgs(k).filter(x=>x.parent===o.id));return ch.length?`<div class="path" style="margin-top:4px;color:#9fb4dd">🏛 Харьяа ${ch.length} нэгжтэй том байгууллага${(()=>{const ss=ch.map(x=>S.orgStats[x.id]).filter(Boolean);const agg=ss.reduce((a,x)=>({n:a.n+x.n,s:a.s+x.s,l:a.l+x.l,d:a.d+x.d}),{n:0,s:0,l:0,d:0});const sc=score(agg);return sc==null?'':` · нэгжүүдийн дундаж ${Math.round(sc/5*100)}%`})()}</div>`:''})()}</div>${scoreBox(st,ovO(o.id))}<button class="x" data-x>✕</button></div>${S.isAdmin?'<div style="padding:10px 22px 0">'+ovEditor('o',o.id)+'</div>':''}
   <div class="mb">
+    <div class="sech">📊 Иргэдийн үнэлгээ <span class="note">${tot} хүн үнэлсэн</span></div>
     <div class="row">
       <div class="dist">${dist}</div>
       <div style="display:flex;flex-direction:column;gap:10px;justify-content:center">
@@ -1211,7 +1214,7 @@ function renderOrgModal(m){
         <div class="react"><button class="rb up ${mv===1?'on':''}" data-rx="1">👍 Таалагдсан <b>${st?st.l:0}</b></button><button class="rb dn ${mv===-1?'on':''}" data-rx="-1">👎 Таалагдаагүй <b>${st?st.d:0}</b></button></div>
       </div>
     </div>
-    <div class="lbox">
+    ${LETTERS?`    <div class="lbox">
       <div class="lbt">Таны өмнөөс бид таны шаардлагыг <b>албан тоотоор баталгаажуулж, албан бичиг</b> болгон тухайн байгууллагад хүргүүлнэ. Байгууллага хуулийн хугацаанд хариу өгөх үүрэгтэй бөгөөд хариуг танд мэдэгдэнэ.</div>
       <div class="lsteps"><span><b>1</b>Гомдол эсвэл талархлаа бичнэ</span><span><b>2</b>${fmt(FEE)}₮ шилжүүлнэ</span><span><b>3</b>Бид албан тоот дугаартай албан бичиг илгээж, хариуг хянана</span></div>
       <div class="cbtns">
@@ -1219,18 +1222,18 @@ function renderOrgModal(m){
       <button class="cbtn thx" data-complain="t"><span style="font-size:24px">🙏</span><span><b>Талархал илгээх</b><br><span class="note" style="color:#bbf7d0">Сайн ажилласан албан хаагчдад талархлаа хүргүүлнэ</span></span><span class="p">${fmt(FEE)}₮</span></button>
       </div>
       <div class="note">Таны хувийн мэдээлэл хэнд ч харагдахгүй тул санаа зоволтгүй.</div>
-    </div>
+    </div>`:''}
     <div class="form">
-      <div class="rulebox">⚠️ <b>Хувь хүн, албан байгууллагыг гүтгэсэн, худал мэдээлэл бичихийг хатуу хориглоно.</b> Бид эерэг, бүтээлч шүүмжлэлээр дамжуулан илүү цэгцтэй үйлчилгээ авахыг эрмэлздэг. Алдаа дутагдлыг үнэн зөв, шударгаар хэлэх нь эрүүл нийгмийн үндэс юм. Дүрэм зөрчсөн сэтгэгдлийг устгана.</div>
-      <div class="rvh"><b>💬 ${mine?'Миний үнэлгээг засах':'Сэтгэгдэл, үнэлгээ үлдээх'}</b><span class="free">Үнэ төлбөргүй · 0₮</span></div>
+      <div class="rvh"><b>✍️ ${mine?'Миний өгсөн сэтгэгдлийг засах':'Та энэ байгууллагад өгөх сэтгэгдэл'}</b><span class="free">Үнэ төлбөргүй</span></div>
       <div class="stars" id="stars">${[1,2,3,4,5].map(i=>`<button data-star="${i}" class="${i<=m.stars?'on':''}" aria-label="${i} од">★</button>`).join('')}<span class="note" style="align-self:center;margin-left:8px">${['Од сонгоно уу','Маш муу','Муу','Дунд','Сайн','Маш сайн'][m.stars]}</span></div>
       <textarea id="revText" rows="3" maxlength="3000" placeholder="Үйлчилгээ ямар байсан бэ? Хүлээлгэсэн хугацаа, харилцаа, асуудал шийдсэн эсэх…">${esc(m.text)}</textarea>
-      ${S.guest||S.anon?`<div class="note">🕶 Таны сэтгэгдэл <b>“Нэргүй иргэн”</b> нэрээр нийтлэгдэнэ. Нэрээ харуулахыг хүсвэл <a href="#me" data-gome2>нэвтэрнэ үү</a>.</div>`:`<label class="chk"><input type="checkbox" id="showName" ${m.show?'checked':''}> Нэрээ харуулах <span class="note">(сонгоогүй бол “Нэргүй иргэн” гэж харагдана)</span></label>`}
+      ${S.guest||S.anon?`<div class="note">🕶 Таны сэтгэгдэл <b>“${esc(autoName(S.uid))}”</b> гэсэн нэрээр нийтлэгдэнэ. Таны хэн болох хэнд ч харагдахгүй.</div>`:`<label class="chk"><input type="checkbox" id="showName" ${m.show?'checked':''}> Өөрийн нэрээ харуулах <span class="note">(сонгоогүй бол “${esc(autoName(S.uid))}” гэж харагдана)</span></label>`}
+      <div class="rulebox">⚠️ <b>Гүтгэсэн, худал мэдээлэл бичихийг хориглоно.</b> Алдаа дутагдлыг үнэн зөв, шударгаар хэлээрэй — дүрэм зөрчсөн сэтгэгдлийг устгана.</div>
       <div style="display:flex;gap:8px;justify-content:flex-end">${mine?'<button class="btn ghost" data-delrev>Устгах</button>':''}<button class="btn" data-saverev ${m.stars?'':'disabled'}>Нийтлэх</button></div>
     </div>
-    <div class="sec"><h3>Иргэдийн сэтгэгдэл <span class="cnt">${revs.length}</span></h3>
+    <div class="sec"><h3>💬 Бусад иргэдийн сэтгэгдэл <span class="cnt">${revs.length}</span></h3>
       <div class="revs">${revs.length?revs.map(r=>{const k=r.key;const e=S.revReact[k]||{l:0,d:0};const my=rr[k];
-        const nm=r.a?'Нэргүй иргэн':(r.uid===S.uid?'Та':(S.names[r.uid]||'Иргэн'));
+        const nm=revName(r);
         return `<div class="rev"><div class="top"><b>${esc(nm)}</b><span class="st">${starStr(r.s)}</span><span>${dateStr(r.t)}</span>${revMenu(k)}</div>${r.x?`<p>${esc(r.x)}</p>`:'<div style="height:6px"></div>'}
         <div class="react"><button class="rb sm up ${my===1?'on':''}" data-rrx="${esc(k)}" data-v="1">👍 ${e.l}</button><button class="rb sm dn ${my===-1?'on':''}" data-rrx="${esc(k)}" data-v="-1">👎 ${e.d}</button></div></div>`}).join(''):'<div class="empty">Сэтгэгдэл алга. Анхных нь болоорой!</div>'}</div>
     </div>
@@ -1335,6 +1338,11 @@ function trackHtml(c){
   return `<div class="track">${['Бүртгэгдсэн','Төлбөр','Илгээсэн','Хариу'].map((t,i)=>`<div class="${i<=idx?'on':''}">${t}</div>`).join('')}</div>`;
 }
 const FEE=window.SHUUMJ_FEE||30000;
+const LETTERS=window.SHUUMJ_LETTERS===true; // төлбөртэй албан бичиг түр унтраалттай
+const AN_A=['Шударга','Сэргэлэн','Зоригтой','Ухаалаг','Тайван','Хөгжилтэй','Эелдэг','Шулуун','Хичээнгүй','Цэлмэг','Идэвхтэй','Нямбай','Сонор','Даруу','Хурц','Төвшин'];
+const AN_N=['Бүргэд','Тарвага','Ирвэс','Хулан','Чоно','Зээр','Янгир','Шонхор','Аргаль','Тэмээ','Үнэг','Хэрээ','Тогоруу','Хун','Буга','Тахь'];
+function autoName(uid){let h=2166136261;for(const ch of String(uid||'x')){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)>>>0}return AN_A[h%16]+' '+AN_N[(h>>>4)%16]+' '+(10+((h>>>8)%90))}
+function revName(r){const base=r.a?autoName(r.uid):(S.names[r.uid]||autoName(r.uid));return r.uid===S.uid?base+' (Та)':base}
 document.querySelectorAll(".feeTxt").forEach(e=>{e.textContent=fmt(FEE)+"₮"});
 function newInvoice(k){
   const mine=new Set(Object.keys(S.myComplaints||{}));
@@ -1439,7 +1447,7 @@ function renderFeed(){
   if(!list.length&&area!=='MN'){el.innerHTML=`<div class="empty">Энэ бүсийн байгууллагуудад одоогоор сэтгэгдэл алга. Баруун талын жагсаалтаас байгууллагаа сонгоод анхны сэтгэгдлээ үлдээгээрэй.</div>`;el.style.height='auto';$('#feedN').textContent='';return}
   if(!list.length){el.innerHTML='<div class="empty">Одоогоор сэтгэгдэл алга. Газрын зураг дээрээс байгууллагаа сонгоод анхны сэтгэгдлээ үлдээгээрэй.</div>';el.style.height='auto';return}
   el.style.height='';
-  const item=r=>{const o=getOrg(r.oid);const c=r.s>=4?'g':r.s===3?'m':'b';const nm=r.a?'Нэргүй иргэн':(r.uid===S.uid?'Та':(S.names[r.uid]||'Иргэн'));
+  const item=r=>{const o=getOrg(r.oid);const c=r.s>=4?'g':r.s===3?'m':'b';const nm=revName(r);
     return `<div class="fi s${c}" data-org="${esc(r.oid)}"><div class="av">${esc(nm.slice(0,1))}</div><div class="bd">
       <div class="o"><span class="ot">${esc(o?o.name:r.oid)}</span>${revMenu(r.key)}</div>
       <div class="m"><span class="st">${starStr(r.s)}</span> · ${esc(nm)} · ${dateStr(r.t)} · ${esc(o?nameOf(o.area):'')}</div>
@@ -1473,7 +1481,7 @@ const HOT={list:[],i:0,hover:false,timer:null};
 function hotShow(dir,instant){
   const L=HOT.list; if(!L.length)return;
   HOT.i=(HOT.i+dir+L.length)%L.length; const r=L[HOT.i];
-  const nm=r.a?'Нэргүй иргэн':(r.uid===S.uid?'Та':(S.names[r.uid]||'Иргэн'));const cc=r.s>=4?'g':r.s===3?'m':'b';
+  const nm=revName(r);const cc=r.s>=4?'g':r.s===3?'m':'b';
   const win=$('#hotWin');
   win.querySelectorAll('.hc').forEach(el=>{if(instant)el.remove();else{el.classList.add('out');setTimeout(()=>el.remove(),400)}});
   const d=document.createElement('div'); d.className='hc s'+cc+(instant?'':' in');
@@ -1582,7 +1590,8 @@ document.addEventListener('click',async e=>{
 
 /* pages */
 function renderPages(){ if(S.page==='me')renderMe(); else if(S.page==='admin')renderAdminPage(); }
-let meTab='letters';
+let meTab=LETTERS?'letters':'reviews';
+if(!LETTERS){const tb=document.getElementById('tickerBox');if(tb)tb.style.display='none'}
 function letterCard(c,admin){
   const o=getOrg(c.o); const k=kOf(c); const s=cStatus(c);
   const st=s==='pending'&&c.claimT?'Төлбөр шалгагдаж байна':statLbl(s);
@@ -1623,13 +1632,13 @@ ${(S.anon||S.guest)?'':`      <div><b>Хувийн мэдээлэл</b><div clas
     </div>
     <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
       <div class="kpis">
-        <div class="card kpi"><div class="l">Гомдол</div><div class="v" style="color:#fca5a5">${cntK('c')}</div></div>
+        ${LETTERS?`<div class="card kpi"><div class="l">Гомдол</div><div class="v" style="color:#fca5a5">${cntK('c')}</div></div>
         <div class="card kpi"><div class="l">Талархал</div><div class="v" style="color:#86efac">${cntK('t')}</div></div>
-        <div class="card kpi"><div class="l">Хариу ирсэн</div><div class="v">${answered}</div></div>
+        <div class="card kpi"><div class="l">Хариу ирсэн</div><div class="v">${answered}</div></div>`:''}
         <div class="card kpi"><div class="l">Миний үнэлгээ</div><div class="v">${myRev.length}</div></div>
       </div>
       <div class="card box">
-        <div class="tabs" style="margin-bottom:12px"><button class="tab ${meTab==='letters'?'on':''}" data-metab="letters">📨 Миний захидлууд</button><button class="tab ${meTab==='reviews'?'on':''}" data-metab="reviews">★ Миний үнэлгээ</button></div>
+        <div class="tabs" style="margin-bottom:12px">${LETTERS?`<button class="tab ${meTab==='letters'?'on':''}" data-metab="letters">📨 Миний захидлууд</button>`:''}<button class="tab ${meTab==='reviews'?'on':''}" data-metab="reviews">★ Миний үнэлгээ</button></div>
         ${meTab==='letters'?(letters.length?`<div class="lscroll">${letters.map(c=>letterCard(c)).join('')}</div>${letters.length>3?`<div class="note" style="text-align:center;margin-top:6px">↕ Нийт ${letters.length} захидал — гүйлгэж харна уу</div>`:''}`:'<div class="empty">Та одоогоор гомдол, талархал илгээгээгүй байна. Газрын зураг дээр байгууллагаа сонгоод “Гомдол илгээх” эсвэл “Талархал илгээх” товчийг дарна уу.</div>')
         :(myRev.length?`<div class="orgs">${myRev.map(r=>{const o=getOrg(r.oid);return o?`<div class="org s${r.s>=4?'g':r.s===3?'m':'b'}" data-org="${esc(r.oid)}"><div class="nm"><b>${o.cat==='Сургууль'?'🏫 ':o.cat==='Цэцэрлэг'?'🧸 ':o.cat==='Эмнэлэг'?'🏥 ':''}${esc(o.name)}</b><small>${dateStr(r.t)} · ${esc(String(r.x||'').slice(0,90))}</small></div><div class="meta"><div class="st">${starStr(r.s)}</div></div></div>`:''}).join('')}</div>`:'<div class="empty">Та одоогоор үнэлгээ өгөөгүй байна.</div>')}
       </div>
