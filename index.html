@@ -212,6 +212,10 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .rvh .free{font-size:12px;font-weight:800;color:#86efac;border:1px solid rgba(34,197,94,.5);background:rgba(34,197,94,.1);border-radius:999px;padding:3px 10px;white-space:nowrap}
 .claimbtn{width:100%;margin-top:10px;padding:12px;font-size:14px;background:#16a34a!important;border-color:#16a34a!important;font-weight:700}
 .claimed{margin-top:10px;font-size:13px;color:#bbf7d0;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.4);border-radius:10px;padding:10px 12px}
+.btn.danger{background:#dc2626;border-color:#dc2626;color:#fff}.btn.danger:hover{background:#b91c1c}
+.lrep{margin-top:6px;font-size:12.5px}.lrep summary{cursor:pointer;color:#86efac;font-weight:700}.lrep .reply{margin-top:6px}
+.myrev .mylk{display:flex;gap:6px;font-size:11.5px;margin-top:4px;justify-content:flex-end}.myrev .mylk span{border:1px solid var(--line2);border-radius:999px;padding:1px 8px}.myrev .mylk .up{color:#86efac}.myrev .mylk .dn{color:#fca5a5}
+.lscroll>*{flex:none}
 .lscroll{display:flex;flex-direction:column;gap:8px;max-height:318px;overflow-y:auto;padding-right:6px;scrollbar-width:thin;scrollbar-color:#2f3f63 transparent;overscroll-behavior:contain}
 .ltc{flex-shrink:0;padding:10px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);display:flex;flex-direction:column;gap:5px}
 .ltc .r1{display:flex;align-items:center;gap:8px;min-width:0}
@@ -1617,7 +1621,7 @@ $('#fDn').onclick=()=>{const f=$('#feed');f.scrollTop+=f.clientHeight*0.8};
 /* stand-alone (Vercel + Firebase) sign-in */
 let auMode='login';
 function authCard(){
-  if(!S.anon&&!S.guest)return `<div class="lt"><div class="note">Та нэвтэрсэн байна.</div><button class="btn ghost" data-au="logout">Гарах</button></div>`;
+  if(!S.anon&&!S.guest)return `<div class="lt"><div class="note">Та нэвтэрсэн байна.</div><button class="btn danger" data-au="logout">⎋ Гарах</button></div>`;
   return `<div class="lt" style="gap:10px"><b style="font-size:16px">${auMode==='signup'?'Бүртгүүлэх':'Нэвтрэх'}</b>
     <button class="btn" data-au="google" style="background:#fff;color:#111;border-color:#fff">G&nbsp; Google-ээр нэвтрэх</button>
     <div class="note" style="text-align:center">эсвэл и-мэйлээр</div>
@@ -1657,9 +1661,12 @@ function letterCard(c,admin){
   return `<div class="ltc">
     <div class="r1"><span class="pill ${k==='t'?'kt':'kc'}">${KLBL[k]}</span><b class="sj">${esc(c.subj)}</b><span class="cd">${esc(c.code)} · ${dateStr(c.t)}</span></div>
     <div class="r2"><span class="on">${esc(o?o.name:c.o)}</span></div>
-    <div class="r3">${prog}<span class="pill ${col}">${esc(st)}</span>${c.reply&&c.reply.x?'<span class="pill g">💬 Хариу ирсэн</span>':''}<span style="margin-left:auto">${act}</span></div>
+    <div class="r3">${prog}<span class="pill ${col}">${esc(st)}</span>${c.reply&&c.reply.x&&s!=='answered'?'<span class="pill g">💬 Хариу ирсэн</span>':''}<span style="margin-left:auto">${act}</span></div>
+    ${!admin&&c.reply&&c.reply.x?`<details class="lrep" data-lrep="${esc(c.code)}" ${LREP_OPEN.has(c.code)?'open':''}><summary>💬 Байгууллагын хариуг харах · ${dateStr(c.reply.t)}</summary><div class="reply">${esc(c.reply.x)}</div></details>`:''}
   </div>`;
 }
+const LREP_OPEN=new Set();document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.dataset&&d.dataset.lrep){if(d.open)LREP_OPEN.add(d.dataset.lrep);else LREP_OPEN.delete(d.dataset.lrep);fitLim5()}},true);
+function fitLim5(root){(root||document).querySelectorAll('.lscroll.lim5').forEach(el=>{const it=el.children;if(it.length>5){const b=it[4].offsetTop+it[4].offsetHeight-it[0].offsetTop;el.style.maxHeight=(b+2)+'px'}else el.style.maxHeight='none'})}
 function renderMe(){
   const el=$('#pageMe'); {const ae=document.activeElement; if(ae&&el.contains(ae)&&/INPUT|TEXTAREA/.test(ae.tagName))return;}
   const signed=S.uid!=='local'&&S.live&&!S.guest; const pr=S.profile||{};
@@ -1694,11 +1701,12 @@ ${(S.anon||S.guest)?'':`      <div><b>Хувийн мэдээлэл</b><div clas
       </div>
       <div class="card box">
         <div class="tabs" style="margin-bottom:12px">${LETTERS?`<button class="tab ${meTab==='letters'?'on':''}" data-metab="letters">📨 Миний захидлууд</button>`:''}<button class="tab ${meTab==='reviews'?'on':''}" data-metab="reviews">★ Миний үнэлгээ</button></div>
-        ${meTab==='letters'?(letters.length?`<div class="lscroll">${letters.map(c=>letterCard(c)).join('')}</div>${letters.length>3?`<div class="note" style="text-align:center;margin-top:6px">↕ Нийт ${letters.length} захидал — гүйлгэж харна уу</div>`:''}`:'<div class="empty">Та одоогоор гомдол, талархал илгээгээгүй байна. Газрын зураг дээр байгууллагаа сонгоод “Гомдол илгээх” эсвэл “Талархал илгээх” товчийг дарна уу.</div>')
-        :(myRev.length?`<div class="orgs">${myRev.map(r=>{const o=getOrg(r.oid);return o?`<div class="org s${r.s>=4?'g':r.s===3?'m':'b'}" data-org="${esc(r.oid)}"><div class="nm"><b>${o.cat==='Сургууль'?'🏫 ':o.cat==='Цэцэрлэг'?'🧸 ':o.cat==='Эмнэлэг'?'🏥 ':''}${esc(o.name)}</b><small>${dateStr(r.t)} · ${esc(String(r.x||'').slice(0,90))}</small></div><div class="meta"><div class="st">${starStr(r.s)}</div></div></div>`:''}).join('')}</div>`:'<div class="empty">Та одоогоор үнэлгээ өгөөгүй байна.</div>')}
+        ${meTab==='letters'?(letters.length?`<div class="lscroll lim5">${letters.map(c=>letterCard(c)).join('')}</div>${letters.length>5?`<div class="note" style="text-align:center;margin-top:6px">↕ Эхний 5 харагдаж байна — нийт ${letters.length} захидал, гүйлгэж үзнэ үү</div>`:''}`:'<div class="empty">Та одоогоор гомдол, талархал илгээгээгүй байна. Газрын зураг дээр байгууллагаа сонгоод “Гомдол илгээх” эсвэл “Талархал илгээх” товчийг дарна уу.</div>')
+        :(myRev.length?`<div class="lscroll lim5">${myRev.map(r=>{const o=getOrg(r.oid);if(!o)return '';const e=S.revReact[S.uid+'|'+r.oid]||{l:0,d:0};const hid=S.hidden[S.uid+'|'+r.oid];return `<div class="org myrev s${r.s>=4?'g':r.s===3?'m':'b'}" data-org="${esc(r.oid)}"><div class="nm"><b>${o.cat==='Сургууль'?'🏫 ':o.cat==='Цэцэрлэг'?'🧸 ':o.cat==='Эмнэлэг'?'🏥 ':''}${esc(o.name)}</b><small>${dateStr(r.t)}${r.x?' · '+esc(String(r.x).slice(0,90)):''}</small>${hid?'<small style="color:#fca5a5">🙈 Админ нуусан</small>':''}</div><div class="meta"><div class="st">${starStr(r.s)}</div><div class="mylk"><span class="up">👍 ${e.l}</span><span class="dn">👎 ${e.d}</span></div></div></div>`}).join('')}</div>${myRev.length>5?`<div class="note" style="text-align:center;margin-top:6px">↕ Эхний 5 харагдаж байна — нийт ${myRev.length} үнэлгээ, гүйлгэж үзнэ үү</div>`:''}`:'<div class="empty">Та одоогоор үнэлгээ өгөөгүй байна.</div>')}
       </div>
     </div>
    </div></div>`;
+  fitLim5(el);
 }
 let adm={tab:'letters',k:'all',st:'all',open:null,q:'',ovq:'',ovOpen:{}};
 function renderAdminPage(){
