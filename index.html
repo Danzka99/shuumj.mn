@@ -200,6 +200,9 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 @media (max-width:640px){.lsteps{grid-template-columns:1fr}}
 .needst{color:#fbbf24!important;font-size:12.5px;font-weight:700}
 .dlim{font-size:12.5px;line-height:1.5;color:#bfdbfe;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.35);border-radius:10px;padding:8px 12px}.dlim b{color:#fff}.dlim.out{color:#fecaca;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.4)}
+.offbtn{display:flex;align-items:center;gap:10px;text-align:left;width:100%;max-width:360px;padding:10px 12px;border-radius:12px;border:1px solid rgba(239,68,68,.5);background:linear-gradient(135deg,rgba(239,68,68,.16),rgba(239,68,68,.06));color:var(--tx);font:inherit;font-size:13px;line-height:1.35;cursor:pointer;transition:transform .15s,border-color .15s}
+.offbtn:hover{border-color:#f87171;transform:translateY(-1px)}.offbtn .oi{font-size:20px}.offbtn b{color:#fecaca}
+.offbtn .op{margin-left:auto;flex:none;font-size:11px;font-weight:800;color:#fde68a;border:1px solid rgba(251,191,36,.5);background:rgba(251,191,36,.1);border-radius:999px;padding:3px 9px}
 .sech{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:-6px}.sech .note{font-weight:500}
 .rvh b{font-size:15px}
 .rvh{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -1221,11 +1224,12 @@ function renderOrgModal(m){
     <div class="row">
       <div class="dist">${dist}</div>
       <div style="display:flex;flex-direction:column;gap:10px;justify-content:center">
+        ${LETTERS?`<button class="offbtn" data-complain="c"><span class="oi">📨</span><span class="ot">Таны нэрийн өмнөөс бид <b>албан тоот</b> илгээж, асуудлыг тань уламжилна</span><span class="op">Төлбөртэй</span></button>`:''}
         <div class="note">Энэ байгууллага танд таалагдсан уу?</div>
         <div class="react"><button class="rb up ${mv===1?'on':''}" data-rx="1">👍 Таалагдсан <b>${st?st.l:0}</b></button><button class="rb dn ${mv===-1?'on':''}" data-rx="-1">👎 Таалагдаагүй <b>${st?st.d:0}</b></button></div>
       </div>
     </div>
-    ${LETTERS?`    <div class="lbox">
+    ${LETTER_BOX?`    <div class="lbox">
       <div class="lbt">Таны өмнөөс бид таны шаардлагыг <b>албан тоотоор баталгаажуулж, албан бичиг</b> болгон тухайн байгууллагад хүргүүлнэ. Байгууллага хуулийн хугацаанд хариу өгөх үүрэгтэй бөгөөд хариуг танд мэдэгдэнэ.</div>
       <div class="lsteps"><span><b>1</b>Гомдол эсвэл талархлаа бичнэ</span><span><b>2</b>${fmt(FEE)}₮ шилжүүлнэ</span><span><b>3</b>Бид албан тоот дугаартай албан бичиг илгээж, хариуг хянана</span></div>
       <div class="cbtns">
@@ -1352,7 +1356,8 @@ function trackHtml(c){
   return `<div class="track">${['Бүртгэгдсэн','Төлбөр','Илгээсэн','Хариу'].map((t,i)=>`<div class="${i<=idx?'on':''}">${t}</div>`).join('')}</div>`;
 }
 const FEE=window.SHUUMJ_FEE||30000;
-const LETTERS=window.SHUUMJ_LETTERS===true; // төлбөртэй албан бичиг түр унтраалттай
+const LETTERS=true; // төлбөртэй албан бичиг (жижиг товчоор)
+const LETTER_BOX=false, TICKER=false; // том хайрцаг, мэдээний мөр түр нуусан
 const AN_A=['Шударга','Сэргэлэн','Зоригтой','Ухаалаг','Тайван','Хөгжилтэй','Эелдэг','Шулуун','Хичээнгүй','Цэлмэг','Идэвхтэй','Нямбай','Сонор','Даруу','Хурц','Төвшин'];
 const AN_N=['Бүргэд','Тарвага','Ирвэс','Хулан','Чоно','Зээр','Янгир','Шонхор','Аргаль','Тэмээ','Үнэг','Хэрээ','Тогоруу','Хун','Буга','Тахь'];
 function autoName(uid){let h=2166136261;for(const ch of String(uid||'x')){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)>>>0}return AN_A[h%16]+' '+AN_N[(h>>>4)%16]+' '+(10+((h>>>8)%90))}
@@ -1605,7 +1610,7 @@ document.addEventListener('click',async e=>{
 /* pages */
 function renderPages(){ if(S.page==='me')renderMe(); else if(S.page==='admin')renderAdminPage(); }
 let meTab=LETTERS?'letters':'reviews';
-if(!LETTERS){const tb=document.getElementById('tickerBox');if(tb)tb.style.display='none'}
+if(!TICKER){const tb=document.getElementById('tickerBox');if(tb)tb.style.display='none'}
 function letterCard(c,admin){
   const o=getOrg(c.o); const k=kOf(c); const s=cStatus(c);
   const st=s==='pending'&&c.claimT?'Төлбөр шалгагдаж байна':statLbl(s);
