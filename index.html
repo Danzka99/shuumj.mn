@@ -223,6 +223,7 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .aidx{font-size:11px;color:var(--tx3)}
 .rsbox{border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.06);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .rslist{display:flex;flex-direction:column;gap:6px;max-height:520px;overflow:auto}.rsrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg2)}.rsrow .rsn{font-weight:700;min-width:180px}.rsrow .btn{margin-left:auto}
+.rb .unx{font-style:normal;font-size:10px;margin-left:6px;opacity:.75;border-left:1px solid currentColor;padding-left:6px}
 .sech{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:-6px}.sech .note{font-weight:500}
 .rvh b{font-size:15px}
 .rvh{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -1276,7 +1277,7 @@ function refreshModal(force){
 function openOrg(oid){const o=getOrg(oid);if(!o)return;openModal({kind:'org',oid,stars:0,text:'',anon:false})}
 function rxBtns(key){
   const e=S.revReact[key]||{l:0,d:0}; const my=((S.reacts[S.uid]||{}).r||{})[key];
-  return `<span class="rxb"><button class="rb sm up ${my===1?'on':''}" data-rrx="${esc(key)}" data-v="1" title="Таалагдсан">👍 ${e.l}</button><button class="rb sm dn ${my===-1?'on':''}" data-rrx="${esc(key)}" data-v="-1" title="Таалагдаагүй">👎 ${e.d}</button></span>`;
+  return `<span class="rxb"><button class="rb sm up ${my===1?'on':''}" data-rrx="${esc(key)}" data-v="1" title="${my===1?'Дахин дарж буцаах':'Таалагдсан'}">👍 ${e.l}${my===1?'<i class="unx">✕</i>':''}</button><button class="rb sm dn ${my===-1?'on':''}" data-rrx="${esc(key)}" data-v="-1" title="${my===-1?'Дахин дарж буцаах':'Таалагдаагүй'}">👎 ${e.d}${my===-1?'<i class="unx">✕</i>':''}</button></span>`;
 }
 function rxSig(key){const e=S.revReact[key]||{l:0,d:0};const my=((S.reacts[S.uid]||{}).r||{})[key]||0;return e.l+'/'+e.d+'/'+my}
 function revMenu(key){
@@ -1305,7 +1306,7 @@ function renderOrgModal(m){
       <div style="display:flex;flex-direction:column;gap:10px;justify-content:center">
         ${LETTERS?`<button class="offbtn" data-complain="c"><span class="oi">📨</span><span class="ot">Таны нэрийн өмнөөс бид <b>албан тоот</b> илгээж, асуудлыг тань уламжилна</span><span class="op">Төлбөртэй</span></button>`:''}
         <div class="note">Энэ байгууллага танд таалагдсан уу?</div>
-        <div class="react"><button class="rb up ${mv===1?'on':''}" data-rx="1">👍 Таалагдсан <b>${st?st.l:0}</b></button><button class="rb dn ${mv===-1?'on':''}" data-rx="-1">👎 Таалагдаагүй <b>${st?st.d:0}</b></button></div>
+        <div class="react"><button class="rb up ${mv===1?'on':''}" data-rx="1" title="${mv===1?'Дахин дарж буцаах':''}">👍 Таалагдсан <b>${st?st.l:0}</b>${mv===1?'<i class="unx">✕</i>':''}</button><button class="rb dn ${mv===-1?'on':''}" data-rx="-1" title="${mv===-1?'Дахин дарж буцаах':''}">👎 Таалагдаагүй <b>${st?st.d:0}</b>${mv===-1?'<i class="unx">✕</i>':''}</button></div>${mv?'<div class="note" style="margin-top:4px">✓ Та '+(mv===1?'👍':'👎')+' дарсан — буцаах бол дахин дарна уу</div>':''}
       </div>
     </div>
     ${LETTER_BOX?`    <div class="lbox">
