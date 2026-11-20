@@ -221,6 +221,8 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .arc.g{border-color:rgba(34,197,94,.6)}.arc.g b{color:#22c55e}.arc.m{border-color:rgba(245,158,11,.6)}.arc.m b{color:#f59e0b}.arc.b{border-color:rgba(239,68,68,.6)}.arc.b b{color:#ef4444}.arc.n b{color:var(--tx3)}
 .arc.in{animation:arin .45s cubic-bezier(.2,.8,.2,1)}@keyframes arin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .aidx{font-size:11px;color:var(--tx3)}
+.rsbox{border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.06);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.rslist{display:flex;flex-direction:column;gap:6px;max-height:520px;overflow:auto}.rsrow{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg2)}.rsrow .rsn{font-weight:700;min-width:180px}.rsrow .btn{margin-left:auto}
 .sech{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:-6px}.sech .note{font-weight:500}
 .rvh b{font-size:15px}
 .rvh{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -783,17 +785,19 @@ const S={
   hidden:{},    // key -> true
   status:{},    // complaint code -> status
   myComplaints:{}, allComplaints:{}, sent:{}, ov:{a:{},o:{}}, myDocExists:false, profile:{}, meName:'', page:'map',
-  names:{}, topics:{}, tcom:{},
+  names:{}, topics:{}, tcom:{}, resetT:{all:0,a:{}},
   orgStats:{}, areaStats:{}, reviewsByOrg:{}, revReact:{}
 };
 let current='MN';
 
+function epochOf(area){const R=S.resetT||{};let e=+R.all||0;const A=R.a||{};let x=area,g=0;while(x&&g++<8){if(A[x]>e)e=A[x];if(x==='MN')break;x=parentOf(x)}return e}
 function recompute(){
   const os={},rbo={},rr={};
   const st=id=>os[id]||(os[id]={n:0,s:0,l:0,d:0,dist:[0,0,0,0,0]});
   for(const [uid,items] of Object.entries(S.reviews)){
     for(const [oid,r] of Object.entries(items||{})){
       const key=uid+'|'+oid; if(S.hidden[key]||S.hidden[oid])continue;
+      if((+r.t||0)<epochOf(oid.slice(0,oid.indexOf('.'))))continue;
       const s=Math.max(1,Math.min(5,Math.round(+r.s||0))); if(!s)continue;
       const o=st(oid);o.n++;o.s+=s;o.dist[s-1]++;
       (rbo[oid]||(rbo[oid]=[])).push({uid,oid,key,s,x:String(r.x||'').slice(0,3000),t:+r.t||0,a:!r.n});
@@ -852,7 +856,7 @@ function dayLog(){try{const a=JSON.parse(localStorage.getItem('sj_daylog')||'[]'
 function todayCount(){const ds=dayStart();const n1=Object.values(myReviews()).filter(r=>(r.c||r.t||0)>=ds).length;return Math.max(n1,dayLog().length)}
 async function saveReview(oid,s,x,show){
   if(!needWrite())return false;
-  const prev=myReviews()[oid];
+  const prev=(()=>{const r=myReviews()[oid];return r&&(+r.t||0)>=epochOf(oid.slice(0,oid.indexOf('.')))?r:null})();
   if(!prev&&todayCount()>=DAY_LIMIT){toast('Өнөөдрийн '+DAY_LIMIT+' сэтгэгдлийн хязгаар дууссан. Маргааш дахин бичнэ үү.');return false}
   const mine=Object.assign({},myReviews()); mine[oid]={s,x,t:Date.now(),c:prev?(prev.c||prev.t):Date.now()};if(show)mine[oid].n=true;
   if(!prev){try{const a=dayLog();a.push(Date.now());localStorage.setItem('sj_daylog',JSON.stringify(a))}catch(e){}}
@@ -895,6 +899,28 @@ async function setOverride(kind,id,val){
   S.ov=nx; refresh();
   try{await writeDoc('meta/override',nx);toast(val==null?'Автомат тооцоонд буцаалаа':'Хадгалагдлаа: '+val+'%')}catch(e){}
 }
+async function adminReset(area){ // area=null → бүх улс
+  if(!S.isAdmin)return;
+  const now=Date.now(); const R={all:+S.resetT.all||0,a:Object.assign({},S.resetT.a||{})};
+  if(area)R.a[area]=now; else {R.all=now;R.a={}}
+  const under=oid=>{if(!area)return true;const a=oid.slice(0,oid.indexOf('.'));return a===area||isUnder(a,area)};
+  // гараар тохируулсан хувийг цэвэрлэх
+  const ov={a:Object.assign({},S.ov.a),o:Object.assign({},S.ov.o)};
+  for(const k of Object.keys(ov.a))if(!area||k===area||isUnder(k,area))delete ov.a[k];
+  for(const k of Object.keys(ov.o))if(under(k))delete ov.o[k];
+  S.resetT=R;S.ov=ov;hotSig='';refresh();
+  try{await writeDoc('meta/reset',R);await writeDoc('meta/override',ov)}catch(e){return}
+  // 👍/👎-ийг тэглэх
+  let n=0;
+  for(const [uid,rx] of Object.entries(S.reacts)){
+    const o=Object.assign({},rx.o||{}),r=Object.assign({},rx.r||{});let ch=false;
+    for(const k of Object.keys(o))if(under(k)){delete o[k];ch=true}
+    for(const k of Object.keys(r)){const oid=k.split('|')[1]||'';if(oid&&under(oid)){delete r[k];ch=true}}
+    if(ch){S.reacts[uid]={o,r};n++;try{await writeDoc('reactions/'+uid,{o,r})}catch(e){}}
+  }
+  refresh();toast('♻ '+(area?nameOf(area):'Бүх улсын')+' үнэлгээ эхнээс эхэллээ');
+}
+async function adminUndoReset(){if(!S.isAdmin)return;const R={all:0,a:{}};S.resetT=R;refresh();try{await writeDoc('meta/reset',R);toast('Хуучин сэтгэгдлүүд буцаж харагдлаа (лайк тэглэгдсэн хэвээр)')}catch(e){}}
 async function adminDeleteReview(uid,oid){
   const items=Object.assign({},S.reviews[uid]||{}); if(!items[oid])return;
   delete items[oid]; S.reviews[uid]=items; refresh();
@@ -958,6 +984,7 @@ async function initDb(){
   db.collection('reactions').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data()||{};o[d.id]={o:v.o||{},r:v.r||{}}});S.reacts=o;refresh()},onErr);
   db.collection('orgs').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data();o[d.id]=(v&&v.items)||{}});S.addedRaw=o;rebuildAdded();refresh()},onErr);
   db.doc('meta/override').onSnapshot(d=>{const v=(d.exists&&d.data())||{};S.ov={a:v.a||{},o:v.o||{}};refresh()},onErr);
+  db.doc('meta/reset').onSnapshot(d=>{const v=(d.exists&&d.data())||{};S.resetT={all:+v.all||0,a:v.a||{}};hotSig='';refresh()},onErr);
   db.doc('meta/topics').onSnapshot(d=>{S.topics=(d.exists&&d.data().items)||{};hotSig='';refresh()},onErr);
   db.collection('tcomments').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data();o[d.id]=(v&&v.items)||{}});S.tcom=o;hotSig='';refresh()},()=>{});
   db.doc('meta/hot').onSnapshot(d=>{S.hotPick=(d.exists&&d.data().p)||{};hotSig='';renderHot();if(modalState&&modalState.kind==='org')renderOrgModal(modalState)},onErr);
@@ -1260,7 +1287,7 @@ function starStr(n){return '★★★★★'.slice(0,n)+'☆☆☆☆☆'.slice(
 function renderOrgModal(m){
   const o=getOrg(m.oid); if(!o){closeModal();return}
   const st=S.orgStats[o.id]; const revs=S.reviewsByOrg[o.id]||[];
-  const mine=(S.reviews[S.uid]||{})[o.id];
+  const mine=(()=>{const r=(S.reviews[S.uid]||{})[o.id];return r&&(+r.t||0)>=epochOf(o.area)?r:null})();
   if(!m.init){m.init=true;if(mine){m.stars=mine.s;m.text=mine.x||'';m.show=!!mine.n}}
   const myR=(S.reacts[S.uid]||{o:{}}).o||{}; const mv=myR[o.id];
   const tot=st?st.n:0;
@@ -1803,7 +1830,7 @@ let adm={tab:'letters',k:'all',st:'all',open:null,q:'',ovq:'',ovOpen:{}};
 function renderAdminPage(){
   const el=$('#pageAdmin');
   if(!S.isAdmin){el.innerHTML=`<div class="pg"><div class="pgh"><h1>Удирдлага</h1><button class="btn ghost" style="margin-left:auto" data-gomap>← Газрын зураг</button></div><div class="card box"><div class="empty">Энэ хуудас зөвхөн Шүүмж-ийн удирдлагад (хуудасны эзэмшигч, Editor эрхтэй хүн) нээгдэнэ.</div></div></div>`;return}
-  {const a2=document.activeElement;if(a2&&(a2.id==='tpTi'||a2.id==='tpB')){adm.tpTi=$('#tpTi').value;adm.tpB=$('#tpB').value;return}}
+  {const a2=document.activeElement;if(a2&&a2.id==='rsConfirm')return;if(a2&&(a2.id==='tpTi'||a2.id==='tpB')){adm.tpTi=$('#tpTi').value;adm.tpB=$('#tpB').value;return}}
   const ae=document.activeElement; if(ae&&(ae.id==='admReply'||(ae.dataset&&ae.dataset.ovinp!=null)))return; // don't wipe typing
   const ovFocus=ae&&ae.id==='ovQ'; const ovPos=ovFocus?ae.selectionStart:0;
   const qFocus=ae&&ae.id==='admQ'; const qPos=qFocus?ae.selectionStart:0;
@@ -1846,6 +1873,18 @@ function renderAdminPage(){
     ${adm.open===id?`<tr><td colspan="7"><div class="grid2" style="align-items:start"><div class="letter" style="font-size:13px">${esc(letterText(c,o))}</div>
       <div style="display:flex;flex-direction:column;gap:8px"><label class="lb">Байгууллагаас ирсэн хариу (иргэнд харагдана)</label><textarea id="admReply" rows="8">${esc(c.reply&&c.reply.x||'')}</textarea>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-asavereply="${esc(id)}">Хариу хадгалах → “Хариу ирсэн”</button><button class="btn ghost" data-acopy="${esc(id)}">Албан бичиг хуулах</button></div></div></div></td></tr>`:''}`}).join('')}</table></div>`:'<div class="empty">Захидал алга</div>'}`;
+  } else if(adm.tab==='reset'){
+    const R=S.resetT||{all:0,a:{}};
+    const areas=[...(KIDS.MN||[]).filter(a=>a!=='MN11').sort((a,b)=>nameOf(a).localeCompare(nameOf(b),'mn')),'MN11',...(KIDS.MN11||[]).filter(d=>typeOf(d)==='district')];
+    const pct=a=>{const sc=aScore(a);return sc==null?'—':Math.round(sc/5*100)+'%'};
+    const row=a=>{const nm=a==='MN11'?'Улаанбаатар хот (бүх дүүрэг)':typeOf(a)==='district'?'↳ '+nameOf(a)+' дүүрэг':nameOf(a)+' аймаг';const ep=R.a&&R.a[a];const n=(S.areaStats[a]||{}).n||0;
+      return `<div class="rsrow"><span class="rsn">${esc(nm)}</span><span class="note">${n} сэтгэгдэл · ${pct(a)}${ep?' · ♻ '+dateStr(ep)+'-нд эхэлсэн':''}</span><button class="btn ghost mini" data-rsarea="${esc(a)}">♻ Эхнээс</button></div>`};
+    body=`<div class="rsbox"><div class="rvh"><b>♻ Бүх улсын үнэлгээг эхнээс нь эхлүүлэх</b></div>
+      <div class="note">Сайтаа шинээр нээхэд туршилтын сэтгэгдлүүдийг тооцоолохоо болиулж, бүх аймаг, хот, дүүрэг, байгууллагын хувийг <b>0-ээс</b> эхлүүлнэ. Хуучин сэтгэгдлүүд устахгүй — архивлагдаж нуугдана (“Буцаах” дарж сэргээж болно). 👍/👎 болон гараар тохируулсан хувь тэглэгдэнэ.</div>
+      ${R.all?`<div class="note" style="color:#86efac">Сүүлд ${dateStr(R.all)}-нд бүх улсаар эхнээс эхэлсэн.</div>`:''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input class="in" id="rsConfirm" placeholder="Баталгаажуулахын тулд ЭХЛҮҮЛЭХ гэж бичнэ үү" style="max-width:340px"><button class="btn danger" data-rsall>♻ Бүгдийг эхнээс эхлүүлэх</button>${R.all||Object.keys(R.a||{}).length?'<button class="btn ghost" data-rsundo>↶ Буцаах (хуучин сэтгэгдлийг сэргээх)</button>':''}</div></div>
+      <div class="rvh" style="margin:16px 0 8px"><b>Аймаг, хот, дүүрэг тус бүрээр</b><span class="note">Зөвхөн тухайн нутгийн байгууллагуудын үнэлгээ эхнээс эхэлнэ</span></div>
+      <div class="rslist">${areas.map(row).join('')}</div>`;
   } else if(adm.tab==='topics'){
     const tl=topicList();
     body=`<div class="form" style="margin-bottom:16px"><div class="rvh"><b>🔥 Шинэ халуун сэдэв нийтлэх</b></div>
@@ -1874,7 +1913,7 @@ function renderAdminPage(){
       <div class="card kpi"><div class="l">Хэрэглэгч</div><div class="v">${users}</div></div>
     </div>
     <div class="card box">
-      <div class="tabs" style="margin-bottom:14px"><button class="tab ${adm.tab==='letters'?'on':''}" data-atab="letters">📨 Захидлууд</button><button class="tab ${adm.tab==='topics'?'on':''}" data-atab="topics">🔥 Халуун сэдэв</button><button class="tab ${adm.tab==='reviews'?'on':''}" data-atab="reviews">💬 Сэтгэгдэл (модерац)</button><button class="tab ${adm.tab==='ov'?'on':''}" data-atab="ov">📊 Тохируулсан хувь</button><button class="tab ${adm.tab==='rank'?'on':''}" data-atab="rank">📉 Муу үнэлгээтэй байгууллага</button></div>
+      <div class="tabs" style="margin-bottom:14px"><button class="tab ${adm.tab==='letters'?'on':''}" data-atab="letters">📨 Захидлууд</button><button class="tab ${adm.tab==='topics'?'on':''}" data-atab="topics">🔥 Халуун сэдэв</button><button class="tab ${adm.tab==='reviews'?'on':''}" data-atab="reviews">💬 Сэтгэгдэл (модерац)</button><button class="tab ${adm.tab==='ov'?'on':''}" data-atab="ov">📊 Тохируулсан хувь</button><button class="tab ${adm.tab==='reset'?'on':''}" data-atab="reset">♻ Эхнээс үнэлэх</button><button class="tab ${adm.tab==='rank'?'on':''}" data-atab="rank">📉 Муу үнэлгээтэй байгууллага</button></div>
       ${body}
     </div></div>`;
   const oq=$('#ovQ'); if(oq){oq.oninput=()=>{adm.ovq=oq.value;renderAdminPage()}; if(ovFocus){oq.focus();try{oq.setSelectionRange(ovPos,ovPos)}catch(e){}}}
@@ -1892,6 +1931,9 @@ document.addEventListener('click',async e=>{
   if(e.target.closest('[data-savepf]')){saveProfile({name:$('#pfName').value.trim(),phone:$('#pfPhone').value.trim(),email:$('#pfEmail').value.trim(),addr:$('#pfAddr').value.trim()});renderMe();return}
   const vl=e.target.closest('[data-viewl]'); if(vl){const c=S.myComplaints[vl.dataset.viewl];if(c)openModal({kind:'complaint',k:kOf(c),oid:c.o,step:3,c});return}
   const at=e.target.closest('[data-atab]'); if(at){adm.tab=at.dataset.atab;renderAdminPage();return}
+  if(e.target.closest('[data-rsall]')){const v=($('#rsConfirm').value||'').trim().toUpperCase();if(v!=='ЭХЛҮҮЛЭХ'){toast('Баталгаажуулахын тулд “ЭХЛҮҮЛЭХ” гэж бичнэ үү');$('#rsConfirm').focus();return}await adminReset(null);renderAdminPage();return}
+  if(e.target.closest('[data-rsundo]')){await adminUndoReset();renderAdminPage();return}
+  const rsa=e.target.closest('[data-rsarea]'); if(rsa){if(rsa.dataset.armed!=='1'){rsa.dataset.armed='1';rsa.textContent='Дахин дарж батлах';rsa.classList.add('danger');setTimeout(()=>{if(rsa.isConnected){rsa.dataset.armed='';rsa.textContent='♻ Эхнээс';rsa.classList.remove('danger')}},3500);return}await adminReset(rsa.dataset.rsarea);renderAdminPage();return}
   if(e.target.closest('[data-tpsave]')){const ti=($('#tpTi').value||'').trim(),b=($('#tpB').value||'').trim();if(ti.length<3){toast('Гарчиг бичнэ үү');return}adm.tpTi='';adm.tpB='';await saveTopic(ti,b);renderAdminPage();return}
   const tpo=e.target.closest('[data-tpon]'); if(tpo){await setTopicOn(tpo.dataset.tpon,tpo.dataset.v==='1');renderAdminPage();return}
   const tpd=e.target.closest('[data-tpdel]'); if(tpd){if(tpd.dataset.armed!=='1'){tpd.dataset.armed='1';tpd.textContent='Дахин дарж устгана уу';setTimeout(()=>{if(tpd.isConnected){tpd.dataset.armed='';tpd.textContent='🗑 Устгах'}},3500);return}await delTopic(tpd.dataset.tpdel);renderAdminPage();return}
