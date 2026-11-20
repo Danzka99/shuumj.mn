@@ -1377,8 +1377,10 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-copy
 document.addEventListener('click',async e=>{
   if(!S.isAdmin)return;
   const sv=e.target.closest('[data-ovsave]'); if(sv){e.preventDefault();e.stopPropagation();const [k,id]=sv.dataset.ovsave.split('|');const inp=document.getElementById('ov_'+k);const v=Math.round(+inp.value);
-    if(inp.value===''||isNaN(v)||v<0||v>100){toast('0–100 хооронд тоо оруулна уу');return} await setOverride(k,id,v);return}
-  const cl=e.target.closest('[data-ovclear]'); if(cl){e.preventDefault();e.stopPropagation();const [k,id]=cl.dataset.ovclear.split('|');await setOverride(k,id,null);return}
+    if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+    if(inp.value.trim()===''){await setOverride(k,id,null);renderAdminPage();return}
+    if(isNaN(v)||v<0||v>100){toast('0–100 хооронд тоо оруулна уу');return} await setOverride(k,id,v);renderAdminPage();return}
+  const cl=e.target.closest('[data-ovclear]'); if(cl){e.preventDefault();e.stopPropagation();if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();const [k,id]=cl.dataset.ovclear.split('|');await setOverride(k,id,null);renderAdminPage();renderPanel();return}
   const mb=e.target.closest('[data-rmenu]'); if(mb){e.preventDefault();e.stopPropagation();const was=RMF&&RMF._btn===mb;closeRmf();if(was)return;
     const src=mb.parentElement.querySelector('.rmpop');const f=document.createElement('div');f.className='rmfloat';f.innerHTML=src?src.innerHTML:'';f._btn=mb;document.body.appendChild(f);RMF=f;
     const r=mb.getBoundingClientRect();const fh=f.offsetHeight,fw=f.offsetWidth;let top=r.bottom+4;if(top+fh>innerHeight-8)top=Math.max(8,r.top-fh-4);
