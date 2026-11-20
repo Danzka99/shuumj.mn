@@ -191,6 +191,8 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .rmenu .rmpop button{text-align:left;background:none;border:none;padding:7px 10px;border-radius:7px;font-size:12.5px}
 .rmenu .rmpop button:hover{background:var(--panel2)}
 .rmenu .rmpop button.dn{color:#fca5a5}
+.rmfloat{position:fixed;z-index:1000;display:flex;flex-direction:column;background:#0f1730;border:1px solid var(--line2);border-radius:10px;padding:4px;min-width:150px;box-shadow:0 12px 30px rgba(0,0,0,.6)}
+.rmfloat button{text-align:left;background:none;border:none;padding:9px 12px;border-radius:7px;font-size:13px;color:var(--tx);cursor:pointer}.rmfloat button:hover{background:var(--panel2)}.rmfloat button.dn{color:#fca5a5}
 .fi .bd .o{display:flex;align-items:center;gap:8px}.fi .bd .o .ot{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .lbox{border:1px solid rgba(239,68,68,.35);background:linear-gradient(180deg,rgba(239,68,68,.07),rgba(34,197,94,.04));border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .lbh{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:15px}
@@ -1350,13 +1352,19 @@ document.addEventListener('click',async e=>{
   const sv=e.target.closest('[data-ovsave]'); if(sv){e.preventDefault();e.stopPropagation();const [k,id]=sv.dataset.ovsave.split('|');const inp=document.getElementById('ov_'+k);const v=Math.round(+inp.value);
     if(inp.value===''||isNaN(v)||v<0||v>100){toast('0–100 хооронд тоо оруулна уу');return} await setOverride(k,id,v);return}
   const cl=e.target.closest('[data-ovclear]'); if(cl){e.preventDefault();e.stopPropagation();const [k,id]=cl.dataset.ovclear.split('|');await setOverride(k,id,null);return}
-  const mb=e.target.closest('[data-rmenu]'); if(mb){e.preventDefault();e.stopPropagation();const r=mb.parentElement;const was=r.classList.contains('open');document.querySelectorAll('.rmenu.open').forEach(x=>x.classList.remove('open'));if(!was)r.classList.add('open');return}
-  const hd=e.target.closest('[data-hide]'); if(hd){e.preventDefault();e.stopPropagation();await setHidden(hd.dataset.hide,hd.dataset.hv!=='0');toast(hd.dataset.hv!=='0'?'Сэтгэгдэл нуугдлаа':'Сэтгэгдэл сэргээгдлээ');return}
+  const mb=e.target.closest('[data-rmenu]'); if(mb){e.preventDefault();e.stopPropagation();const was=RMF&&RMF._btn===mb;closeRmf();if(was)return;
+    const src=mb.parentElement.querySelector('.rmpop');const f=document.createElement('div');f.className='rmfloat';f.innerHTML=src?src.innerHTML:'';f._btn=mb;document.body.appendChild(f);RMF=f;
+    const r=mb.getBoundingClientRect();const fh=f.offsetHeight,fw=f.offsetWidth;let top=r.bottom+4;if(top+fh>innerHeight-8)top=Math.max(8,r.top-fh-4);
+    f.style.top=top+'px';f.style.left=Math.max(8,Math.min(innerWidth-fw-8,r.right-fw))+'px';return}
+  const hd=e.target.closest('[data-hide]'); if(hd){e.preventDefault();e.stopPropagation();closeRmf();await setHidden(hd.dataset.hide,hd.dataset.hv!=='0');toast(hd.dataset.hv!=='0'?'Сэтгэгдэл нуугдлаа':'Сэтгэгдэл сэргээгдлээ');return}
   const dl=e.target.closest('[data-del]'); if(dl){e.preventDefault();e.stopPropagation();
     if(dl.dataset.armed!=='1'){dl.dataset.armed='1';dl.textContent='Дахин дарж устгана уу';setTimeout(()=>{if(dl.isConnected){dl.dataset.armed='';dl.textContent='🗑 Устгах'}},3500);return}
-    const k=dl.dataset.del;if(k.startsWith('tc|')){const [,u,c]=k.split('|');await deleteTComment(u,c,true);return}const i=k.indexOf('|');await adminDeleteReview(k.slice(0,i),k.slice(i+1));return}
+    closeRmf();const k=dl.dataset.del;if(k.startsWith('tc|')){const [,u,c]=k.split('|');await deleteTComment(u,c,true);return}const i=k.indexOf('|');await adminDeleteReview(k.slice(0,i),k.slice(i+1));return}
 },true);
-document.addEventListener('click',e=>{if(!e.target.closest('.rmenu'))document.querySelectorAll('.rmenu.open').forEach(x=>x.classList.remove('open'))});
+let RMF=null;function closeRmf(){if(RMF){RMF.remove();RMF=null}}
+document.addEventListener('click',e=>{if(!e.target.closest('.rmfloat')&&!e.target.closest('[data-rmenu]'))closeRmf()});
+window.addEventListener('scroll',e=>{if(!RMF)return;const t=e.target;if(t===document||t===document.documentElement||(t&&t.contains&&t.contains(RMF._btn)))closeRmf()},true);
+window.addEventListener('resize',closeRmf);
 document.addEventListener('click',e=>{const b=e.target.closest('[data-rrx]');if(!b)return;e.preventDefault();e.stopPropagation();react('r',b.dataset.rrx,+b.dataset.v)},true);
 /* letter flow (гомдол + талархал) */
 const CTYPES=['Үйлчилгээний чанар','Хүнд суртал, удаашрал','Албан хаагчийн ёс зүй','Авлига, хээл хахууль','Хууль бус шийдвэр','Төлбөр, мөнгөн асуудал','Мэдээлэл өгөхөөс татгалзсан','Бусад'];
@@ -1610,7 +1618,7 @@ function hotShow(dir,instant){
   const a=HOT.i+1,b=Math.min(HOT.i+2,n);
   $('#hotIdx').textContent=(a===b?a:a+'–'+b)+'/'+n;
   $('#hotPrev').style.visibility=$('#hotNext').style.visibility=n>2?'':'hidden';
-  if(!HOT.timer)HOT.timer=setInterval(()=>{if(!HOT.hover&&!document.hidden&&S.page==='map'&&HOT.list.length>2&&!document.querySelector('#hotWin .rmenu.open'))hotShow(1)},5000);
+  if(!HOT.timer)HOT.timer=setInterval(()=>{if(!HOT.hover&&!document.hidden&&S.page==='map'&&HOT.list.length>2&&!RMF)hotShow(1)},5000);
 }
 function renderHotTopic(tp){
   const card=$('#hotCard'); const key='tp|'+tp.id; const cm=topicComments(tp.id).filter(r=>!r.hid);
