@@ -83,7 +83,7 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 /* map */
 .mapbox{position:relative;overflow:hidden;align-self:start;position:sticky;top:80px}
 @media (max-width:980px){.mapbox{position:relative;top:0}}
-#map{display:block;width:100%;height:auto;aspect-ratio:1000/620;background:radial-gradient(ellipse at 50% 40%,#111c36 0%,#0a1122 70%);touch-action:none}
+#map{display:block;width:100%;height:auto;aspect-ratio:1000/620;background:radial-gradient(ellipse at 50% 40%,#111c36 0%,#0a1122 70%);touch-action:manipulation}
 #map path{vector-effect:non-scaling-stroke;transition:fill .25s}
 #map .base path{stroke:#2a3a5e;stroke-width:.8;cursor:pointer}
 #map .mid path{stroke:#0b1226;stroke-width:.7;cursor:pointer}
@@ -478,8 +478,8 @@ html,body{overflow-x:hidden}
       <div class="loading" id="mapLoading">Газрын зураг ачааллаж байна…</div>
       <div class="crumbs" id="crumbs"></div>
       <div class="zbtns">
-        <button id="zin" title="Томруулах">＋</button>
-        <button id="zout" title="Жижигрүүлэх">－</button>
+        <button id="zin" title="Томруулах" style="display:none">＋</button>
+        <button id="zout" title="Жижигрүүлэх" style="display:none">－</button>
         <button id="zup" title="Дээш буцах">↑</button>
         <button id="zhome" title="Монгол Улс">⌂</button>
       </div>
@@ -978,7 +978,7 @@ function initMap(topo){
   gLab=svg.append('g').attr('class','labels');
   gCtr=svg.append('g').attr('class','ctrs');
   for(const [a,v] of Object.entries(CTR)){v._p=proj([v[2],v[3]])}
-  zoom=d3.zoom().scaleExtent([1,3000]).translateExtent([[-W,-H],[2*W,2*H]]).on('zoom',e=>{curT=e.transform;gZoom.attr('transform',curT);placeLabels()});
+  zoom=d3.zoom().filter(()=>false).scaleExtent([1,3000]).translateExtent([[-W,-H],[2*W,2*H]]).on('zoom',e=>{curT=e.transform;gZoom.attr('transform',curT);placeLabels()});
   svg.call(zoom).on('dblclick.zoom',null);
   gBase.selectAll('path').data(AIMAGS).join('path').attr('d',pathGen)
     .on('click',(e,f)=>go(f.properties.id)).on('mousemove',showTip).on('mouseleave',hideTip);
