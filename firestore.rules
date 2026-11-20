@@ -19,6 +19,9 @@ service cloud.firestore {
     match /reactions/{uid} { allow read: if true; allow write: if (own(uid)) || isAdmin(); }
     match /orgs/{uid}      { allow read: if true; allow write: if (own(uid)) || isAdmin(); }
 
+    // Халуун сэдвийн сэтгэгдэл: хүн бүр уншина, эзэн нь болон удирдлага бичнэ
+    match /tcomments/{uid} { allow read: if true; allow write: if (own(uid)) || isAdmin(); }
+
     // Сэтгэгдэлд харагдах нэр
     match /profiles/{uid}  { allow read: if true; allow write: if own(uid) && real(); }
 

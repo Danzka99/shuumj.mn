@@ -206,6 +206,12 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .offbtn .op{margin-left:auto;flex:none;font-size:11px;font-weight:800;color:#fde68a;border:1px solid rgba(251,191,36,.5);background:rgba(251,191,36,.1);border-radius:999px;padding:3px 9px}
 .thr{border:1px solid rgba(251,146,60,.4);background:rgba(251,146,60,.07);border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;line-height:1.45;color:#fed7aa}.thr b{color:#fff}
 .thrb{height:6px;border-radius:9px;background:var(--bg2);overflow:hidden}.thrb i{display:block;height:100%;background:linear-gradient(90deg,#f59e0b,#ef4444);border-radius:9px}.thrn{font-size:11.5px;color:var(--tx3)}.thrn b{color:#fdba74}
+.htopic{display:flex;flex-direction:column;gap:6px;margin:0 0 8px}.htopic p{margin:0;font-size:13px;line-height:1.5;color:var(--tx2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.htact{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hc.st{border-left-color:#f97316}
+.tpbody{white-space:pre-wrap;font-size:14px;line-height:1.6;color:var(--tx2);background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.tplist{display:flex;flex-direction:column;gap:10px}.tpi{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg2);display:flex;flex-direction:column;gap:6px}.tpi.on{border-color:#f97316;box-shadow:0 0 0 1px rgba(249,115,22,.4)}
+.tpi .tph{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tpi .tph b{font-size:14.5px}.tpi p{margin:0;font-size:13px;color:var(--tx2);white-space:pre-wrap}
 .sech{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:-6px}.sech .note{font-weight:500}
 .rvh b{font-size:15px}
 .rvh{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -767,7 +773,7 @@ const S={
   hidden:{},    // key -> true
   status:{},    // complaint code -> status
   myComplaints:{}, allComplaints:{}, sent:{}, ov:{a:{},o:{}}, myDocExists:false, profile:{}, meName:'', page:'map',
-  names:{},
+  names:{}, topics:{}, tcom:{},
   orgStats:{}, areaStats:{}, reviewsByOrg:{}, revReact:{}
 };
 let current='MN';
@@ -942,6 +948,8 @@ async function initDb(){
   db.collection('reactions').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data()||{};o[d.id]={o:v.o||{},r:v.r||{}}});S.reacts=o;refresh()},onErr);
   db.collection('orgs').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data();o[d.id]=(v&&v.items)||{}});S.addedRaw=o;rebuildAdded();refresh()},onErr);
   db.doc('meta/override').onSnapshot(d=>{const v=(d.exists&&d.data())||{};S.ov={a:v.a||{},o:v.o||{}};refresh()},onErr);
+  db.doc('meta/topics').onSnapshot(d=>{S.topics=(d.exists&&d.data().items)||{};hotSig='';refresh()},onErr);
+  db.collection('tcomments').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data();o[d.id]=(v&&v.items)||{}});S.tcom=o;hotSig='';refresh()},()=>{});
   db.doc('meta/hot').onSnapshot(d=>{S.hotPick=(d.exists&&d.data().p)||{};hotSig='';renderHot();if(modalState&&modalState.kind==='org')renderOrgModal(modalState)},onErr);
   db.doc('meta/hidden').onSnapshot(d=>{S.hidden=(d.exists&&d.data().h)||{};rebuildAdded();refresh()},onErr);
   db.doc('meta/complaintStatus').onSnapshot(d=>{S.status=(d.exists&&d.data().s)||{};refreshModal()},onErr);
@@ -1212,6 +1220,7 @@ function refreshModal(force){
   else if(m.kind==='complaint')renderComplaint(m);
   else if(m.kind==='addorg')renderAddOrg(m);
   else if(m.kind==='loginreq')renderLoginReq(m);
+  else if(m.kind==='topic')renderTopicModal(m);
 }
 
 /* org modal */
@@ -1288,6 +1297,10 @@ modal.addEventListener('click',async e=>{
   if(e.target.closest('[data-x]')){closeModal();return}
   if(e.target.closest('[data-setaddr]')){const v=$('#setAddr').value.trim();if(!v)return;const mine=Object.assign({},S.addedRaw[S.uid]||{});if(mine[m.oid]){mine[m.oid]=Object.assign({},mine[m.oid],{d:v});S.addedRaw[S.uid]=mine;rebuildAdded();refresh();try{await writeDoc('orgs/'+S.uid,{items:mine});toast('Байршил хадгалагдлаа')}catch(err){}}return}
   const oo=e.target.closest('[data-openorg]'); if(oo){e.preventDefault();openOrg(oo.dataset.openorg);return}
+  if(m.kind==='topic'){
+    if(e.target.closest('[data-tcpost]')){const x=($('#tcText').value||'').trim();if(x.length<3){toast('Сэтгэгдлээ бичнэ үү');return}m.editing=false;const ok=await postTComment(m.id,x);if(ok){m.text='';toast('Сэтгэгдэл нийтлэгдлээ');renderTopicModal(m)}return}
+    const td=e.target.closest('[data-tcdel]');if(td){await deleteTComment(S.uid,td.dataset.tcdel);renderTopicModal(m);return}
+    return}
   if(m.kind==='org'){
     const s=e.target.closest('[data-star]'); if(s){m.stars=+s.dataset.star;m.text=$('#revText').value;m.editing=false;renderOrgModal(m);return}
     const rx=e.target.closest('[data-rx]'); if(rx){react('o',m.oid,+rx.dataset.rx);return}
@@ -1322,7 +1335,7 @@ document.addEventListener('click',async e=>{
   const hd=e.target.closest('[data-hide]'); if(hd){e.preventDefault();e.stopPropagation();await setHidden(hd.dataset.hide,hd.dataset.hv!=='0');toast(hd.dataset.hv!=='0'?'Сэтгэгдэл нуугдлаа':'Сэтгэгдэл сэргээгдлээ');return}
   const dl=e.target.closest('[data-del]'); if(dl){e.preventDefault();e.stopPropagation();
     if(dl.dataset.armed!=='1'){dl.dataset.armed='1';dl.textContent='Дахин дарж устгана уу';setTimeout(()=>{if(dl.isConnected){dl.dataset.armed='';dl.textContent='🗑 Устгах'}},3500);return}
-    const k=dl.dataset.del;const i=k.indexOf('|');await adminDeleteReview(k.slice(0,i),k.slice(i+1));return}
+    const k=dl.dataset.del;if(k.startsWith('tc|')){const [,u,c]=k.split('|');await deleteTComment(u,c,true);return}const i=k.indexOf('|');await adminDeleteReview(k.slice(0,i),k.slice(i+1));return}
 },true);
 document.addEventListener('click',e=>{if(!e.target.closest('.rmenu'))document.querySelectorAll('.rmenu.open').forEach(x=>x.classList.remove('open'))});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-rrx]');if(!b)return;e.preventDefault();e.stopPropagation();react('r',b.dataset.rrx,+b.dataset.v)},true);
@@ -1501,12 +1514,46 @@ function renderFeed(){
 
 /* 🔥 hot topic: organisation with the most comments in the current area */
 let hotSig='';
+/* ---------- admin topics (халуун сэдэв) ---------- */
+function topicList(){return Object.entries(S.topics||{}).map(([id,t])=>Object.assign({id},t)).sort((a,b)=>b.t-a.t)}
+function activeTopic(){return topicList().find(t=>t.on&&!S.hidden['tp|'+t.id])||null}
+function topicComments(id){const out=[];for(const [uid,items] of Object.entries(S.tcom||{}))for(const [cid,c] of Object.entries(items||{})){if(c.tp!==id)continue;const key='tc|'+uid+'|'+cid;if(S.hidden[key]&&!S.isAdmin)continue;out.push({uid,cid,key,tc:1,x:String(c.x||'').slice(0,1000),t:+c.t||0,a:true,hid:!!S.hidden[key]})}return out.sort((a,b)=>b.t-a.t)}
+async function saveTopic(ti,b){if(!S.isAdmin)return;const id='t'+Date.now().toString(36);const items={};for(const [k,v] of Object.entries(S.topics||{}))items[k]=Object.assign({},v,{on:false});items[id]={ti,b,t:Date.now(),on:true};S.topics=items;hotSig='';refresh();try{await writeDoc('meta/topics',{items});toast('🔥 Халуун сэдэв нийтлэгдлээ')}catch(e){}}
+async function setTopicOn(id,on){if(!S.isAdmin)return;const items={};for(const [k,v] of Object.entries(S.topics||{}))items[k]=Object.assign({},v,{on:on&&k===id});S.topics=items;hotSig='';refresh();try{await writeDoc('meta/topics',{items})}catch(e){}}
+async function delTopic(id){if(!S.isAdmin)return;const items=Object.assign({},S.topics);delete items[id];S.topics=items;hotSig='';refresh();try{await writeDoc('meta/topics',{items});toast('Сэдэв устгагдлаа')}catch(e){}}
+async function postTComment(tp,x){if(!needWrite())return false;const mine=Object.assign({},(S.tcom||{})[S.uid]||{});
+  const ds=dayStart();if(Object.values(mine).filter(c=>c.t>=ds).length>=10){toast('Өнөөдрийн 10 сэтгэгдлийн хязгаар дууссан');return false}
+  const cid='c'+Date.now().toString(36);mine[cid]={tp,x,t:Date.now()};S.tcom[S.uid]=mine;hotSig='';refresh();
+  try{await writeDoc('tcomments/'+S.uid,{items:mine});return true}catch(e){return false}}
+async function deleteTComment(uid,cid,admin){if(uid!==S.uid&&!S.isAdmin)return;const items=Object.assign({},(S.tcom||{})[uid]||{});delete items[cid];S.tcom[uid]=items;hotSig='';refresh();try{await writeDoc('tcomments/'+uid,{items});toast(admin?'Сэтгэгдэл устгагдлаа':'Устгагдлаа')}catch(e){}}
+function openTopic(id){openModal({kind:'topic',id,text:''})}
+function renderTopicModal(m){
+  const tp=(S.topics||{})[m.id]; if(!tp){closeModal();return}
+  const key='tp|'+m.id; const cm=topicComments(m.id); resolveNames([]);
+  modal.innerHTML=`<div class="mh"><div style="flex:1;min-width:0"><div class="kind">🔥 Халуун сэдэв · ${dateStr(tp.t)}</div><h2>${esc(tp.ti)}</h2></div><button class="x" data-x>✕</button></div>
+  <div class="mb">
+    ${tp.b?`<div class="tpbody">${esc(tp.b)}</div>`:''}
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="note">Энэ сэдвийг дэмжиж байна уу?</span>${rxBtns(key)}</div>
+    <div class="form">
+      <div class="rvh"><b>✍️ Таны сэтгэгдэл</b><span class="free">Үнэ төлбөргүй</span></div>
+      <textarea id="tcText" rows="3" maxlength="1000" placeholder="Энэ сэдвийн талаар таны бодол, туршлага…">${esc(m.text||'')}</textarea>
+      <div class="note">🕶 “${esc(autoName(S.uid))}” нэрээр нийтлэгдэнэ. Гүтгэсэн, худал мэдээлэл бичихийг хориглоно.</div>
+      <div style="display:flex;justify-content:flex-end"><button class="btn" data-tcpost>Нийтлэх</button></div>
+    </div>
+    <div class="sec"><h3>💬 Сэтгэгдлүүд <span class="cnt">${cm.length}</span></h3>
+      <div class="revs" id="revList">${cm.length?cm.map(r=>`<div class="rev" style="${r.hid?'opacity:.45':''}"><div class="top"><b>${esc(revName(r))}</b><span>${dateStr(r.t)}</span>${r.uid===S.uid&&!S.isAdmin?`<button class="rmb" data-tcdel="${esc(r.cid)}" title="Устгах">🗑</button>`:revMenu(r.key)}</div><p>${esc(r.x)}</p><div class="react">${rxBtns(r.key)}</div></div>`).join(''):'<div class="empty">Сэтгэгдэл алга. Анхных нь болоорой!</div>'}</div>
+    </div>
+  </div>`;
+  const ta=$('#tcText'); ta.addEventListener('input',()=>{m.text=ta.value;m.editing=true}); ta.addEventListener('blur',()=>{m.editing=false});
+  {const rl=$('#revList');if(rl){const it=rl.querySelectorAll('.rev');if(it.length>10){const b=it[9].offsetTop+it[9].offsetHeight-it[0].offsetTop;rl.style.maxHeight=(b+2)+'px';rl.classList.add('lim');rl.scrollTop=m.revScroll||0;rl.onscroll=()=>{m.revScroll=rl.scrollTop}}}}
+}
 function renderHot(){
   const area=current||'MN'; const ctrOf=isCentre(area)?CTR_SOUM[area]:null;
   const by={};
   for(const [oid,arr] of Object.entries(S.reviewsByOrg)){const ra=oid.slice(0,oid.indexOf('.'));
     if(area==='MN'||isUnder(ra,area)||(ctrOf&&ra===ctrOf))by[oid]=arr;}
   let best=null;for(const [oid,arr] of Object.entries(by)){if(!best||arr.length>best[1].length||(arr.length===best[1].length&&arr[0].t>best[1][0].t))best=[oid,arr]}
+  const AT=activeTopic(); if(AT){renderHotTopic(AT);return}
   const pk=hotPickFor(area); let pinned=false;
   if(pk&&getOrg(pk)){best=[pk,S.reviewsByOrg[pk]||[]];pinned=true}
   const card=$('#hotCard');
@@ -1515,7 +1562,7 @@ function renderHot(){
   resolveNames(list.filter(r=>!r.a).map(r=>r.uid));
   const sig=area+'|'+oid+'|'+(S.isAdmin?1:0)+(pinned?'p':'')+'|'+list.map(r=>r.key+r.t+(S.names[r.uid]||'')+rxSig(r.key)).join(',');
   if(sig===hotSig)return; const sameOrg=hotSig.split('|')[1]===oid; hotSig=sig;
-  card.style.display='';
+  card.style.display='';card.classList.remove('istopic');{const tb=$('#hotTopic');if(tb)tb.remove()}
   const sc=oScore(oid),c=cls(sc);
   $('#hotOrg').innerHTML=`${orgIcon(o)}${esc(o.name)}`; $('#hotOrg').dataset.org=oid;
   {let pe=$('#hotPin');if(!pe){pe=document.createElement('span');pe.id='hotPin';pe.className='hpin';$('#hotOrg').after(pe)}pe.textContent='📌 Онцолсон';pe.style.display=pinned?'':'none'}
@@ -1539,12 +1586,28 @@ function hotShow(dir,instant){
   win.querySelectorAll('.hpair,.hc,.empty').forEach(el=>{if(instant)el.remove();else{el.classList.add('out');setTimeout(()=>el.remove(),400)}});
   const box=document.createElement('div'); box.className='hpair'+(instant?'':' in');
   box.innerHTML=pair.map(r=>{const nm=revName(r);const cc=r.s>=4?'g':r.s===3?'m':'b';
-    return `<div class="hc s${cc}"><div class="hm"><span class="st">${starStr(r.s)}</span><span class="hn">${esc(nm)} · ${dateStr(r.t)}</span>${revMenu(r.key)}</div><p>${r.x?esc(r.x):'<i style="color:var(--tx3)">Зөвхөн од өгсөн</i>'}</p><div class="frx">${rxBtns(r.key)}</div></div>`}).join('');
+    return `<div class="hc s${r.tc?'t':cc}"><div class="hm">${r.tc?'':`<span class="st">${starStr(r.s)}</span>`}<span class="hn">${esc(nm)} · ${dateStr(r.t)}</span>${revMenu(r.key)}</div><p>${r.x?esc(r.x):'<i style="color:var(--tx3)">Зөвхөн од өгсөн</i>'}</p><div class="frx">${rxBtns(r.key)}</div></div>`}).join('');
   win.appendChild(box);
   const a=HOT.i+1,b=Math.min(HOT.i+2,n);
   $('#hotIdx').textContent=(a===b?a:a+'–'+b)+'/'+n;
   $('#hotPrev').style.visibility=$('#hotNext').style.visibility=n>2?'':'hidden';
   if(!HOT.timer)HOT.timer=setInterval(()=>{if(!HOT.hover&&!document.hidden&&S.page==='map'&&HOT.list.length>2&&!document.querySelector('#hotWin .rmenu.open'))hotShow(1)},5000);
+}
+function renderHotTopic(tp){
+  const card=$('#hotCard'); const key='tp|'+tp.id; const cm=topicComments(tp.id).filter(r=>!r.hid);
+  const sig='T|'+tp.id+'|'+(S.isAdmin?1:0)+'|'+rxSig(key)+'|'+cm.map(r=>r.key+r.t+rxSig(r.key)).join(',');
+  if(sig===hotSig)return; const same=hotSig.split('|')[1]===tp.id; hotSig=sig;
+  card.style.display='';card.classList.add('istopic');
+  $('#hotOrg').innerHTML=`📢 ${esc(tp.ti)}`; $('#hotOrg').dataset.org=''; $('#hotOrg').dataset.topic=tp.id;
+  {const pe=$('#hotPin');if(pe)pe.style.display='none'}
+  $('#hotN').innerHTML=`${cm.length} сэтгэгдэл`;
+  let tb=$('#hotTopic'); if(!tb){tb=document.createElement('div');tb.id='hotTopic';tb.className='htopic';$('#hotWin').before(tb)}
+  tb.innerHTML=`${tp.b?`<p>${esc(tp.b)}</p>`:''}<div class="htact">${rxBtns(key)}<button class="btn mini" data-opentopic="${esc(tp.id)}">💬 Сэтгэгдэл бичих</button></div>`;
+  {const ad=$('#hotAdm');if(ad){ad.style.display=S.isAdmin?'':'none';ad.innerHTML=S.isAdmin?'<span class="note">⚙ Админы нийтэлсэн сэдэв. Удирдлага → 🔥 Халуун сэдэв хэсгээс өөрчилнө.</span>':''}}
+  HOT.list=cm; if(!same)HOT.i=0; if(HOT.i>=cm.length)HOT.i=0;
+  if(!cm.length){$('#hotWin').innerHTML='<div class="empty" style="padding:12px">Сэтгэгдэл алга — анхных нь болоорой!</div>';$('#hotIdx').textContent='';$('#hotPrev').style.visibility=$('#hotNext').style.visibility='hidden';$('#hotWin').style.height='56px';return}
+  $('#hotWin').style.height=cm.length>1?'':'80px';
+  hotShow(0,true);
 }
 function hotPickFor(area){const P=S.hotPick||{};let x=area,g=0;while(x&&g++<8){const o=P[x];if(o&&!S.hidden[o])return o;if(x==='MN')break;x=parentOf(x)||'MN'}return null}
 async function setHotPick(area,oid){if(!S.isAdmin)return;const P=Object.assign({},S.hotPick||{});if(oid)P[area]=oid;else delete P[area];S.hotPick=P;hotSig='';renderHot();
@@ -1555,7 +1618,8 @@ $('#hotNext').onclick=()=>hotShow(1);
 $('#hotCard').addEventListener('mouseenter',()=>{HOT.hover=true});
 $('#hotCard').addEventListener('mouseleave',()=>{HOT.hover=false});
 $('#hotCard').addEventListener('touchstart',()=>{HOT.hover=true;clearTimeout(HOT.tt);HOT.tt=setTimeout(()=>{HOT.hover=false},6000)},{passive:true});
-document.getElementById('hotOrg').addEventListener('click',e=>{const id=e.currentTarget.dataset.org;if(id)openOrg(id)});
+document.getElementById('hotOrg').addEventListener('click',e=>{const id=e.currentTarget.dataset.org;if(id)openOrg(id);else if(e.currentTarget.dataset.topic)openTopic(e.currentTarget.dataset.topic)});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-opentopic]');if(b){e.preventDefault();openTopic(b.dataset.opentopic)}});
 
 /* news ticker: one line, талархал + гомдол mixed, names shown one by one */
 const TK_DEMO=[['MN81.ne','t'],['MN11.usug','c'],['MN1101.zdtg','t'],['MN46.cg','c'],['MN11.ugt1','t'],['MN1110.ndh','c'],['MN65.th','c'],['MN8101.emt','t'],['MN11.103','t'],['MN1125.ubh','c']];
@@ -1712,6 +1776,7 @@ let adm={tab:'letters',k:'all',st:'all',open:null,q:'',ovq:'',ovOpen:{}};
 function renderAdminPage(){
   const el=$('#pageAdmin');
   if(!S.isAdmin){el.innerHTML=`<div class="pg"><div class="pgh"><h1>Удирдлага</h1><button class="btn ghost" style="margin-left:auto" data-gomap>← Газрын зураг</button></div><div class="card box"><div class="empty">Энэ хуудас зөвхөн Шүүмж-ийн удирдлагад (хуудасны эзэмшигч, Editor эрхтэй хүн) нээгдэнэ.</div></div></div>`;return}
+  {const a2=document.activeElement;if(a2&&(a2.id==='tpTi'||a2.id==='tpB')){adm.tpTi=$('#tpTi').value;adm.tpB=$('#tpB').value;return}}
   const ae=document.activeElement; if(ae&&(ae.id==='admReply'||(ae.dataset&&ae.dataset.ovinp!=null)))return; // don't wipe typing
   const ovFocus=ae&&ae.id==='ovQ'; const ovPos=ovFocus?ae.selectionStart:0;
   const qFocus=ae&&ae.id==='admQ'; const qPos=qFocus?ae.selectionStart:0;
@@ -1754,6 +1819,13 @@ function renderAdminPage(){
     ${adm.open===id?`<tr><td colspan="7"><div class="grid2" style="align-items:start"><div class="letter" style="font-size:13px">${esc(letterText(c,o))}</div>
       <div style="display:flex;flex-direction:column;gap:8px"><label class="lb">Байгууллагаас ирсэн хариу (иргэнд харагдана)</label><textarea id="admReply" rows="8">${esc(c.reply&&c.reply.x||'')}</textarea>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-asavereply="${esc(id)}">Хариу хадгалах → “Хариу ирсэн”</button><button class="btn ghost" data-acopy="${esc(id)}">Албан бичиг хуулах</button></div></div></div></td></tr>`:''}`}).join('')}</table></div>`:'<div class="empty">Захидал алга</div>'}`;
+  } else if(adm.tab==='topics'){
+    const tl=topicList();
+    body=`<div class="form" style="margin-bottom:16px"><div class="rvh"><b>🔥 Шинэ халуун сэдэв нийтлэх</b></div>
+      <input class="in" id="tpTi" maxlength="140" placeholder="Сэдвийн гарчиг — ж: Улаанбаатарын түгжрэлийг хэрхэн шийдэх вэ?" value="${esc(adm.tpTi||'')}">
+      <textarea id="tpB" rows="4" maxlength="2000" placeholder="Тайлбар (заавал биш) — хүмүүсээс юуны талаар санал асууж байгаагаа бичнэ үү">${esc(adm.tpB||'')}</textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="note">Нийтлэхэд газрын зургийн “🔥 Халуухан сэдэв” хэсэгт гарч, хүмүүс сэтгэгдэл бичиж, 👍/👎 дарна. Өмнөх сэдэв идэвхгүй болно.</span><button class="btn" data-tpsave>Нийтлэх</button></div></div>
+      <div class="tplist">${tl.length?tl.map(t=>{const n=topicComments(t.id).length;const e=S.revReact['tp|'+t.id]||{l:0,d:0};return `<div class="tpi ${t.on?'on':''}"><div class="tph">${t.on?'<span class="pill g">● Идэвхтэй</span>':'<span class="pill">Идэвхгүй</span>'}<b>${esc(t.ti)}</b><span class="note" style="margin-left:auto">${dateStr(t.t)} · 💬 ${n} · 👍 ${e.l} · 👎 ${e.d}</span></div>${t.b?`<p>${esc(t.b)}</p>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn ghost mini" data-opentopic="${esc(t.id)}">Сэтгэгдлүүдийг харах</button>${t.on?`<button class="btn ghost mini" data-tpon="${esc(t.id)}" data-v="0">⏸ Идэвхгүй болгох</button>`:`<button class="btn mini" data-tpon="${esc(t.id)}" data-v="1">▶ Идэвхжүүлэх</button>`}<button class="btn ghost mini" data-tpdel="${esc(t.id)}" style="color:#fca5a5">🗑 Устгах</button></div></div>`}).join(''):'<div class="empty">Одоогоор сэдэв алга.</div>'}</div>`;
   } else if(adm.tab==='reviews'){
     const revs=[];for(const [uid,items] of Object.entries(S.reviews))for(const [oid,r] of Object.entries(items||{}))revs.push({uid,oid,key:uid+'|'+oid,...r});
     revs.sort((a,b)=>b.t-a.t);
@@ -1775,7 +1847,7 @@ function renderAdminPage(){
       <div class="card kpi"><div class="l">Хэрэглэгч</div><div class="v">${users}</div></div>
     </div>
     <div class="card box">
-      <div class="tabs" style="margin-bottom:14px"><button class="tab ${adm.tab==='letters'?'on':''}" data-atab="letters">📨 Захидлууд</button><button class="tab ${adm.tab==='reviews'?'on':''}" data-atab="reviews">💬 Сэтгэгдэл (модерац)</button><button class="tab ${adm.tab==='ov'?'on':''}" data-atab="ov">📊 Тохируулсан хувь</button><button class="tab ${adm.tab==='rank'?'on':''}" data-atab="rank">📉 Муу үнэлгээтэй байгууллага</button></div>
+      <div class="tabs" style="margin-bottom:14px"><button class="tab ${adm.tab==='letters'?'on':''}" data-atab="letters">📨 Захидлууд</button><button class="tab ${adm.tab==='topics'?'on':''}" data-atab="topics">🔥 Халуун сэдэв</button><button class="tab ${adm.tab==='reviews'?'on':''}" data-atab="reviews">💬 Сэтгэгдэл (модерац)</button><button class="tab ${adm.tab==='ov'?'on':''}" data-atab="ov">📊 Тохируулсан хувь</button><button class="tab ${adm.tab==='rank'?'on':''}" data-atab="rank">📉 Муу үнэлгээтэй байгууллага</button></div>
       ${body}
     </div></div>`;
   const oq=$('#ovQ'); if(oq){oq.oninput=()=>{adm.ovq=oq.value;renderAdminPage()}; if(ovFocus){oq.focus();try{oq.setSelectionRange(ovPos,ovPos)}catch(e){}}}
@@ -1793,6 +1865,9 @@ document.addEventListener('click',async e=>{
   if(e.target.closest('[data-savepf]')){saveProfile({name:$('#pfName').value.trim(),phone:$('#pfPhone').value.trim(),email:$('#pfEmail').value.trim(),addr:$('#pfAddr').value.trim()});renderMe();return}
   const vl=e.target.closest('[data-viewl]'); if(vl){const c=S.myComplaints[vl.dataset.viewl];if(c)openModal({kind:'complaint',k:kOf(c),oid:c.o,step:3,c});return}
   const at=e.target.closest('[data-atab]'); if(at){adm.tab=at.dataset.atab;renderAdminPage();return}
+  if(e.target.closest('[data-tpsave]')){const ti=($('#tpTi').value||'').trim(),b=($('#tpB').value||'').trim();if(ti.length<3){toast('Гарчиг бичнэ үү');return}adm.tpTi='';adm.tpB='';await saveTopic(ti,b);renderAdminPage();return}
+  const tpo=e.target.closest('[data-tpon]'); if(tpo){await setTopicOn(tpo.dataset.tpon,tpo.dataset.v==='1');renderAdminPage();return}
+  const tpd=e.target.closest('[data-tpdel]'); if(tpd){if(tpd.dataset.armed!=='1'){tpd.dataset.armed='1';tpd.textContent='Дахин дарж устгана уу';setTimeout(()=>{if(tpd.isConnected){tpd.dataset.armed='';tpd.textContent='🗑 Устгах'}},3500);return}await delTopic(tpd.dataset.tpdel);renderAdminPage();return}
   const ak=e.target.closest('[data-ak]'); if(ak){adm.k=ak.dataset.ak;renderAdminPage();return}
   const as=e.target.closest('[data-ast]'); if(as){adm.st=as.dataset.ast;renderAdminPage();return}
   const ox=e.target.closest('[data-ovexp]'); if(ox){const id=ox.dataset.ovexp;adm.ovOpen[id]=!adm.ovOpen[id];renderAdminPage();return}
