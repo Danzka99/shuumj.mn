@@ -92,6 +92,7 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 #map .ctrs .cm{cursor:pointer}
 #map .ctrs .star{fill:#fbbf24;stroke:#0b1226;stroke-width:1.5}
 #map .ctrs .halo{fill:rgba(251,191,36,.18);stroke:rgba(251,191,36,.55);stroke-width:1}
+#map .ctrs .cap .star{fill:#3b82f6}#map .ctrs .cap .halo{fill:rgba(59,130,246,.2);stroke:rgba(96,165,250,.7)}#map .ctrs .cap text{fill:#bfdbfe}
 #map .ctrs text{font-size:10.5px;font-weight:700;fill:#fde68a;paint-order:stroke;stroke:#08101f;stroke-width:3px;stroke-linejoin:round;text-anchor:start}
 .chip.ctr{border-color:#fbbf24;color:#fde68a;background:rgba(251,191,36,.08)}
 .ctrtag{display:inline-block;font-size:10.5px;font-weight:700;color:#fde68a;border:1px solid rgba(251,191,36,.6);background:rgba(251,191,36,.1);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:3px;letter-spacing:0;text-transform:none}
@@ -507,6 +508,7 @@ html,body{overflow-x:hidden}
         <span><i style="background:var(--bad)"></i>Муу 55%-аас доош</span>
         <span><i style="background:var(--none)"></i>Үнэлгээгүй</span>
         <span style="color:#fde68a">★ Аймгийн төв</span>
+        <span style="color:#93c5fd">★ Нийслэл хот</span>
       </div>
       <div class="tip" id="tip"></div>
     </div>
@@ -1058,7 +1060,7 @@ function drawMap(zoomTo){
   const ctrList=Object.entries(CTR).map(([a,v])=>({a,v}));
   const star=d3.symbol().type(d3.symbolStar);
   gCtr.selectAll('g.cm').data(ctrList,d=>d.a).join(en=>{const g=en.append('g').attr('class','cm');g.append('circle').attr('class','halo');g.append('path').attr('class','star');g.append('text');
-      g.on('click',(e,d)=>go(d.v[0]||d.a)).on('mousemove',(e,d)=>{tip.innerHTML=`<b>★ ${esc(ctrLabel(d.a))}</b><br><span style="color:var(--tx3)">${d.a==='MN11'?'Нийслэл':esc(nameOf(d.a))+' аймгийн төв'}</span>`;const box=$('.mapbox').getBoundingClientRect();tip.style.left=(e.clientX-box.left+14)+'px';tip.style.top=(e.clientY-box.top+14)+'px';tip.style.opacity=1}).on('mouseleave',hideTip);return g});
+      g.on('click',(e,d)=>go(d.v[0]||d.a)).on('mousemove',(e,d)=>{tip.innerHTML=`<b>★ ${esc(ctrLabel(d.a))}</b><br><span style="color:var(--tx3)">${d.a==='MN11'?'Нийслэл хот':esc(nameOf(d.a))+' аймгийн төв'}</span>`;const box=$('.mapbox').getBoundingClientRect();tip.style.left=(e.clientX-box.left+14)+'px';tip.style.top=(e.clientY-box.top+14)+'px';tip.style.opacity=1}).on('mouseleave',hideTip);return g});
   placeLabels();
   if(zoomTo!==false){
     let f=(t==='bag'||t==='village')?FEAT[parentOf(id)]:FEAT[id];
@@ -1082,7 +1084,8 @@ function placeCentres(){
       // name: always at country level for the star itself is small; when zoomed show for the focused aimag
       const showName=current==='MN'?false:(mine||k>6);
       g.style('display',(current==='MN'&&d.a==='MN11')?'none':null);
-      g.select('text').attr('x',big?13:9).attr('y',4).text(big?'★ '+ctrLabel(d.a)+' — аймгийн төв':d.v[1]).style('display',showName?null:'none');
+      g.classed('cap',d.a==='MN11');
+      g.select('text').attr('x',big?13:9).attr('y',4).text(d.a==='MN11'?(big?'★ Улаанбаатар хот':'Улаанбаатар хот'):(big?'★ '+ctrLabel(d.a)+' — аймгийн төв':d.v[1])).style('display',showName?null:'none');
     });
 }
 function placeLabels(){
