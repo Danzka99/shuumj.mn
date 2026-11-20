@@ -199,6 +199,7 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .lsteps b{flex:none;width:20px;height:20px;border-radius:6px;background:var(--panel2);color:var(--acc2);display:grid;place-items:center;font-size:11px}
 @media (max-width:640px){.lsteps{grid-template-columns:1fr}}
 .needst{color:#fbbf24!important;font-size:12.5px;font-weight:700}
+.dlim{font-size:12.5px;line-height:1.5;color:#bfdbfe;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.35);border-radius:10px;padding:8px 12px}.dlim b{color:#fff}.dlim.out{color:#fecaca;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.4)}
 .sech{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:-6px}.sech .note{font-weight:500}
 .rvh b{font-size:15px}
 .rvh{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -804,9 +805,16 @@ function needWrite(){
   if(!S.canWrite){toast('Танд бичих эрх алга (Contributor эрх шаардлагатай).');return false}
   return true;
 }
+const DAY_LIMIT=5;
+function dayStart(){const d=new Date();d.setHours(0,0,0,0);return +d}
+function dayLog(){try{const a=JSON.parse(localStorage.getItem('sj_daylog')||'[]');return a.filter(t=>t>=dayStart())}catch(e){return []}}
+function todayCount(){const ds=dayStart();const n1=Object.values(myReviews()).filter(r=>(r.c||r.t||0)>=ds).length;return Math.max(n1,dayLog().length)}
 async function saveReview(oid,s,x,show){
   if(!needWrite())return false;
-  const mine=Object.assign({},myReviews()); mine[oid]={s,x,t:Date.now()};if(show)mine[oid].n=true;
+  const prev=myReviews()[oid];
+  if(!prev&&todayCount()>=DAY_LIMIT){toast('Өнөөдрийн '+DAY_LIMIT+' сэтгэгдлийн хязгаар дууссан. Маргааш дахин бичнэ үү.');return false}
+  const mine=Object.assign({},myReviews()); mine[oid]={s,x,t:Date.now(),c:prev?(prev.c||prev.t):Date.now()};if(show)mine[oid].n=true;
+  if(!prev){try{const a=dayLog();a.push(Date.now());localStorage.setItem('sj_daylog',JSON.stringify(a))}catch(e){}}
   S.reviews[S.uid]=mine; refresh();
   try{await writeDoc('reviews/'+S.uid,{items:mine});return true}catch(e){return false}
 }
@@ -1227,10 +1235,11 @@ function renderOrgModal(m){
     <div class="form">
       <div class="rvh"><b>✍️ ${mine?'Миний өгсөн сэтгэгдлийг засах':'Та энэ байгууллагад өгөх сэтгэгдэл'}</b><span class="free">Үнэ төлбөргүй</span></div>
       <div class="stars" id="stars">${[1,2,3,4,5].map(i=>`<button data-star="${i}" class="${i<=m.stars?'on':''}" aria-label="${i} од">★</button>`).join('')}<span class="note ${m.stars?'':'needst'}" style="align-self:center;margin-left:8px">${['⬅ Од сонгоно уу (заавал)','Маш муу','Муу','Дунд','Сайн','Маш сайн'][m.stars]}</span></div>
+      ${(()=>{const left=Math.max(0,DAY_LIMIT-todayCount());return mine?'':`<div class="dlim ${left?'':'out'}">📝 Нэг хүн өдөрт <b>${DAY_LIMIT}</b> сэтгэгдэл бичих боломжтой тул асуудлаа <b>тодорхой, ойлгомжтой</b> бичнэ үү. ${left?`Өнөөдөр <b>${left}</b> үлдсэн.`:'<b>Өнөөдрийн хязгаар дууссан</b> — маргааш дахин бичнэ үү.'}</div>`})()}
       <textarea id="revText" rows="3" maxlength="3000" placeholder="Үйлчилгээ ямар байсан бэ? Хүлээлгэсэн хугацаа, харилцаа, асуудал шийдсэн эсэх…">${esc(m.text)}</textarea>
       ${S.guest||S.anon?`<div class="note">🕶 Таны сэтгэгдэл <b>“${esc(autoName(S.uid))}”</b> гэсэн нэрээр нийтлэгдэнэ. Таны хэн болох хэнд ч харагдахгүй.</div>`:`<label class="chk"><input type="checkbox" id="showName" ${m.show?'checked':''}> Өөрийн нэрээ харуулах <span class="note">(сонгоогүй бол “${esc(autoName(S.uid))}” гэж харагдана)</span></label>`}
       <div class="rulebox">⚠️ <b>Гүтгэсэн, худал мэдээлэл бичихийг хориглоно.</b> Алдаа дутагдлыг үнэн зөв, шударгаар хэлээрэй — дүрэм зөрчсөн сэтгэгдлийг устгана.</div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap">${m.stars?'':'<span class="needst" style="margin-right:auto">⭐ Сэтгэгдэл нийтлэхийн тулд заавал 1–5 одоор үнэлгээ өгнө үү</span>'}${mine?'<button class="btn ghost" data-delrev>Устгах</button>':''}<button class="btn" data-saverev ${m.stars?'':'disabled'}>Нийтлэх</button></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap">${m.stars?'':'<span class="needst" style="margin-right:auto">⭐ Сэтгэгдэл нийтлэхийн тулд заавал 1–5 одоор үнэлгээ өгнө үү</span>'}${mine?'<button class="btn ghost" data-delrev>Устгах</button>':''}<button class="btn" data-saverev ${m.stars&&(mine||todayCount()<DAY_LIMIT)?'':'disabled'}>Нийтлэх</button></div>
     </div>
     <div class="sec"><h3>💬 Бусад иргэдийн сэтгэгдэл <span class="cnt">${revs.length}</span></h3>
       <div class="revs">${revs.length?revs.map(r=>{const k=r.key;const e=S.revReact[k]||{l:0,d:0};const my=rr[k];
