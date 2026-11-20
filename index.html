@@ -213,6 +213,12 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .tpbody{white-space:pre-wrap;font-size:14px;line-height:1.6;color:var(--tx2);background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .tplist{display:flex;flex-direction:column;gap:10px}.tpi{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg2);display:flex;flex-direction:column;gap:6px}.tpi.on{border-color:#f97316;box-shadow:0 0 0 1px rgba(249,115,22,.4)}
 .tpi .tph{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tpi .tph b{font-size:14.5px}.tpi p{margin:0;font-size:13px;color:var(--tx2);white-space:pre-wrap}
+.arot{display:flex;align-items:center;gap:8px;margin:6px 0 4px;min-height:30px}
+.arc{display:inline-flex;align-items:center;gap:10px;padding:5px 12px;border-radius:999px;border:1px solid var(--line2);background:var(--bg2);text-decoration:none;color:var(--tx);font-size:14px;font-weight:600;max-width:100%}
+.arc b{font-size:15px;font-weight:800}.arc .an{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arc.g{border-color:rgba(34,197,94,.6)}.arc.g b{color:#22c55e}.arc.m{border-color:rgba(245,158,11,.6)}.arc.m b{color:#f59e0b}.arc.b{border-color:rgba(239,68,68,.6)}.arc.b b{color:#ef4444}.arc.n b{color:var(--tx3)}
+.arc.in{animation:arin .45s cubic-bezier(.2,.8,.2,1)}@keyframes arin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.aidx{font-size:11px;color:var(--tx3)}
 .sech{font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:-6px}.sech .note{font-weight:500}
 .rvh b{font-size:15px}
 .rvh{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -1151,11 +1157,20 @@ function orgRow(o,showArea,noParent){
     <div class="meta"><div class="st">★ ${avg}</div><div>${st?st.n:0} сэтгэгдэл · 👍${st?st.l:0} 👎${st?st.d:0}</div></div>
   </div>`;
 }
+const AROT={list:[],i:0,timer:null};
+function arotList(){const ids=[...(KIDS.MN||[]).filter(a=>a!=='MN11'),...(KIDS.MN11||[]).filter(d=>typeOf(d)==='district')];
+  const lbl=a=>typeOf(a)==='district'?nameOf(a)+' дүүрэг':nameOf(a)+' аймаг';
+  const L=ids.map(a=>{const sc=aScore(a);return {a,n:lbl(a),pct:sc==null?null:Math.round(sc/5*100),c:cls(sc)}});
+  return L.filter(x=>x.pct!=null).sort((x,y)=>y.pct-x.pct).concat(L.filter(x=>x.pct==null).sort((x,y)=>x.n.localeCompare(y.n,'mn')))}
+function arotShow(step){const el=document.getElementById('arot');if(!el||!AROT.list.length)return;
+  AROT.i=((AROT.i+step)%AROT.list.length+AROT.list.length)%AROT.list.length;const x=AROT.list[AROT.i];
+  el.innerHTML=`<a href="#${esc(x.a)}" data-go="${esc(x.a)}" class="arc ${x.c}"><span class="an">${esc(x.n)}</span><b>${x.pct==null?'—':x.pct+'%'}</b></a><span class="aidx">${AROT.i+1}/${AROT.list.length}</span>`;
+  const a=el.querySelector('.arc');a.classList.remove('in');void a.offsetWidth;a.classList.add('in')}
 function renderPanel(){
   const id=current,t=typeOf(id)||'country';
   const st=S.areaStats[id];
   const path=ancestors(id).slice(0,-1).map(a=>a==='MN'?'Монгол Улс':nameOf(a)).join(' › ');
-  let h=`<div class="ahead"><div class="t"><div class="kind">${esc(TYPE_LBL[t]||'')}${isCentre(id)?'<span class="ctrtag">★ Аймгийн төв</span>':''}</div><h1>${esc(id==='MN'?'Монгол Улс':nameOf(id))}</h1><div class="path">${esc(path||'Бүх аймаг, нийслэлийн нэгдсэн үнэлгээ')}${isCentre(id)&&CTR[CTR_SOUM[id]][1]!==nameOf(id)?' · '+esc(CTR[CTR_SOUM[id]][1])+' хот':''}${t==='aimag'&&CTR[id]?` · <a href="#${esc(CTR[id][0])}" data-go="${esc(CTR[id][0])}" style="color:#fde68a;text-decoration:none">★ Төв: ${esc(ctrLabel(id))}</a>`:''}</div></div>${scoreBox(st,id==='MN'?null:ovA(id))}</div>${id==='MN'?'':ovEditor('a',id)}`;
+  let h=`<div class="ahead"><div class="t"><div class="kind">${esc(id==='MN'?'Монгол Улс':TYPE_LBL[t]||'')}${isCentre(id)?'<span class="ctrtag">★ Аймгийн төв</span>':''}</div><h1>${esc(id==='MN'?'Нийт үнэлгээ':nameOf(id))}</h1>${id==='MN'?'<div class="arot" id="arot"></div>':''}<div class="path">${esc(path||'Монгол Улсын бүх аймаг, нийслэлийн төрийн байгууллагуудын нэгдсэн үнэлгээ')}${isCentre(id)&&CTR[CTR_SOUM[id]][1]!==nameOf(id)?' · '+esc(CTR[CTR_SOUM[id]][1])+' хот':''}${t==='aimag'&&CTR[id]?` · <a href="#${esc(CTR[id][0])}" data-go="${esc(CTR[id][0])}" style="color:#fde68a;text-decoration:none">★ Төв: ${esc(ctrLabel(id))}</a>`:''}</div></div>${scoreBox(st,id==='MN'?null:ovA(id))}</div>${id==='MN'?'':ovEditor('a',id)}`;
   if(id==='MN'){
     const rk=new Set([...Object.keys(S.orgStats),...Object.keys((S.ov&&S.ov.o)||{})]);
     const ranked=[...rk].map(oid=>({o:getOrg(oid),sc:oScore(oid)})).filter(x=>x.o&&x.sc!=null);
@@ -1193,6 +1208,7 @@ function renderPanel(){
   const prevRb=$('#rankBox'); const keepRank=(prevRb&&renderPanel._area===id&&renderPanel._tab===rankTab)?prevRb.scrollTop:0; renderPanel._tab=rankTab;
   const prevOs=$('#panel .oscroll'); const keepTop=(prevOs&&renderPanel._area===id)?prevOs.scrollTop:0; renderPanel._area=id;
   $('#panel').innerHTML=h;
+  if(id==='MN'){AROT.list=arotList();arotShow(0);if(!AROT.timer)AROT.timer=setInterval(()=>{const el=document.getElementById('arot');if(el&&!el.matches(':hover')&&!document.hidden)arotShow(1)},2500)}
   $('#addOrgBtn').onclick=()=>openAddOrg(id);
   const rb=$('#rankBox'); if(rb){const r=rb.querySelectorAll('.org'); if(r.length>3){rb._loop=true;rb.scrollTop=keepRank} else {rb.classList.add('few');rb._loop=false}
     rb.addEventListener('mouseenter',()=>{rb._hover=true});rb.addEventListener('mouseleave',()=>{rb._hover=false});
