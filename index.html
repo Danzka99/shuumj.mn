@@ -291,6 +291,8 @@ label.lb{font-size:12px;color:var(--tx2);display:block;margin-bottom:4px}
 .btn.ghost{background:transparent;color:var(--tx);border-color:var(--line2)}
 .btn.red{background:#dc2626;border-color:#dc2626}
 .revs{display:flex;flex-direction:column;gap:10px}
+.revs.lim{overflow-y:auto;overscroll-behavior:contain;padding-right:4px;scrollbar-width:thin}
+.revmore{text-align:center;font-size:12px;color:var(--tx3);margin-top:6px}
 .rev{padding:12px 14px;border-radius:12px;background:var(--bg2);border:1px solid var(--line)}
 .rev .top{display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--tx2);flex-wrap:wrap}
 .rev .top b{color:var(--tx)}
@@ -1242,13 +1244,15 @@ function renderOrgModal(m){
       <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap">${m.stars?'':'<span class="needst" style="margin-right:auto">⭐ Сэтгэгдэл нийтлэхийн тулд заавал 1–5 одоор үнэлгээ өгнө үү</span>'}${mine?'<button class="btn ghost" data-delrev>Устгах</button>':''}<button class="btn" data-saverev ${m.stars&&(mine||todayCount()<DAY_LIMIT)?'':'disabled'}>Нийтлэх</button></div>
     </div>
     <div class="sec"><h3>💬 Бусад иргэдийн сэтгэгдэл <span class="cnt">${revs.length}</span></h3>
-      <div class="revs">${revs.length?revs.map(r=>{const k=r.key;const e=S.revReact[k]||{l:0,d:0};const my=rr[k];
+      <div class="revs" id="revList">${revs.length?revs.map(r=>{const k=r.key;const e=S.revReact[k]||{l:0,d:0};const my=rr[k];
         const nm=revName(r);
         return `<div class="rev"><div class="top"><b>${esc(nm)}</b><span class="st">${starStr(r.s)}</span><span>${dateStr(r.t)}</span>${revMenu(k)}</div>${r.x?`<p>${esc(r.x)}</p>`:'<div style="height:6px"></div>'}
         <div class="react"><button class="rb sm up ${my===1?'on':''}" data-rrx="${esc(k)}" data-v="1">👍 ${e.l}</button><button class="rb sm dn ${my===-1?'on':''}" data-rrx="${esc(k)}" data-v="-1">👎 ${e.d}</button></div></div>`}).join(''):'<div class="empty">Сэтгэгдэл алга. Анхных нь болоорой!</div>'}</div>
     </div>
+    ${revs.length>10?`<div class="revmore">↕ Эхний 10 харагдаж байна — бусад ${revs.length-10} сэтгэгдлийг гүйлгэж үзнэ үү</div>`:''}
     ${o.user&&S.isAdmin?`<button class="btn ghost" data-hideorg>Энэ байгууллагыг нуух (модерац)</button>`:''}
   </div>`;
+  {const rl=$('#revList');if(rl){const it=rl.querySelectorAll('.rev');if(it.length>10){const top=it[0].offsetTop;const b=it[9].offsetTop+it[9].offsetHeight;rl.style.maxHeight=(b-top+2)+'px';rl.classList.add('lim');rl.scrollTop=m.revScroll||0;rl.onscroll=()=>{m.revScroll=rl.scrollTop};}}}
   const ta=$('#revText'); ta.addEventListener('input',()=>{m.text=ta.value;m.editing=true}); ta.addEventListener('blur',()=>{m.editing=false});
   {const sn=$('#showName'); if(sn)sn.onchange=e=>{m.show=e.target.checked};}
 }
