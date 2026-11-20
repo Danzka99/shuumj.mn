@@ -231,8 +231,13 @@ header{position:sticky;top:0;z-index:30;background:rgba(8,13,26,.86);backdrop-fi
 .hoth .hotn{margin-left:auto;font-size:12px;color:var(--tx3);white-space:nowrap}
 .hnav{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--tx3);flex:none}
 .hnav button{width:22px;height:22px;border-radius:6px;border:1px solid var(--line2);background:var(--panel);font-size:13px;line-height:1;padding:0}
-.hotwin{position:relative;height:74px;overflow:hidden}
-.hc{position:absolute;inset:0;padding:7px 10px;border-radius:10px;background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--none);display:flex;flex-direction:column;gap:3px}
+.hotwin{position:relative;height:178px;overflow:hidden}
+.hc>*{flex:none}
+.hpair{position:absolute;inset:0;display:flex;flex-direction:column;gap:6px}
+.hpair.in{animation:hin .45s cubic-bezier(.2,.8,.2,1)}.hpair.out{animation:hout .4s ease forwards}
+.hpin{font-size:10.5px;font-weight:800;color:#fde68a;border:1px solid rgba(251,191,36,.45);background:rgba(251,191,36,.1);border-radius:999px;padding:1px 7px;white-space:nowrap}
+.hotadm{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:12px}
+.hc{position:relative;flex:none;padding:7px 10px;border-radius:10px;background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--none);display:flex;flex-direction:column;gap:3px}
 .hc.in{animation:hin .45s cubic-bezier(.2,.8,.2,1)}.hc.out{animation:hout .4s ease forwards}
 @keyframes hin{from{transform:translateY(100%);opacity:0}to{transform:none;opacity:1}}
 @keyframes hout{to{transform:translateY(-100%);opacity:0}}
@@ -435,6 +440,7 @@ html,body{overflow-x:hidden}
   .ahead h1{font-size:20px}.score{min-width:72px;padding:6px 8px}.score .v{font-size:21px}
   .feed{padding:10px 12px}.fwin{height:300px}
   .hot{padding:8px 10px}.hoth .ht{font-size:11px}.hoth .hotn{font-size:11px}
+  .hoth{flex-wrap:wrap;row-gap:4px}.hoth .hotorg{order:9;flex-basis:100%;font-size:13px}.hoth .hpin{order:10}
   .modal .mh{padding:16px 16px 12px}.modal .mb{padding:14px 16px 18px}
   .ov{padding:12px 8px}
 }
@@ -930,6 +936,7 @@ async function initDb(){
   db.collection('reactions').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data()||{};o[d.id]={o:v.o||{},r:v.r||{}}});S.reacts=o;refresh()},onErr);
   db.collection('orgs').onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{const v=d.data();o[d.id]=(v&&v.items)||{}});S.addedRaw=o;rebuildAdded();refresh()},onErr);
   db.doc('meta/override').onSnapshot(d=>{const v=(d.exists&&d.data())||{};S.ov={a:v.a||{},o:v.o||{}};refresh()},onErr);
+  db.doc('meta/hot').onSnapshot(d=>{S.hotPick=(d.exists&&d.data().p)||{};hotSig='';renderHot();if(modalState&&modalState.kind==='org')renderOrgModal(modalState)},onErr);
   db.doc('meta/hidden').onSnapshot(d=>{S.hidden=(d.exists&&d.data().h)||{};rebuildAdded();refresh()},onErr);
   db.doc('meta/complaintStatus').onSnapshot(d=>{S.status=(d.exists&&d.data().s)||{};refreshModal()},onErr);
   if(!S.anon&&!S.guest)db.doc('complaints/'+S.uid).onSnapshot(d=>{S.myDocExists=d.exists;S.myComplaints=(d.exists&&d.data().items)||{};refreshModal();renderPages()},onErr);
@@ -1262,6 +1269,7 @@ function renderOrgModal(m){
         <div class="react"><button class="rb sm up ${my===1?'on':''}" data-rrx="${esc(k)}" data-v="1">👍 ${e.l}</button><button class="rb sm dn ${my===-1?'on':''}" data-rrx="${esc(k)}" data-v="-1">👎 ${e.d}</button></div></div>`}).join(''):'<div class="empty">Сэтгэгдэл алга. Анхных нь болоорой!</div>'}</div>
     </div>
     ${revs.length>10?`<div class="revmore">↕ Эхний 10 харагдаж байна — бусад ${revs.length-10} сэтгэгдлийг гүйлгэж үзнэ үү</div>`:''}
+    ${S.isAdmin?(()=>{const area=current||'MN';const on=(S.hotPick||{})[area]===o.id;const an=area==='MN'?'Монгол Улс':nameOf(area);return `<div class="hotadm" style="margin-top:0">${on?`<button class="btn ghost" data-hotset="">🔥 Халуун сэдвээс хасах</button>`:`<button class="btn" data-hotset="1">🔥 Халуун сэдэв болгох</button>`}<span class="note">⚙ Админ · “${esc(an)}” хэсгийн газрын зурагт онцолно</span></div>`})():''}
     ${o.user&&S.isAdmin?`<button class="btn ghost" data-hideorg>Энэ байгууллагыг нуух (модерац)</button>`:''}
   </div>`;
   {const rl=$('#revList');if(rl){const it=rl.querySelectorAll('.rev');if(it.length>10){const top=it[0].offsetTop;const b=it[9].offsetTop+it[9].offsetHeight;rl.style.maxHeight=(b-top+2)+'px';rl.classList.add('lim');rl.scrollTop=m.revScroll||0;rl.onscroll=()=>{m.revScroll=rl.scrollTop};}}}
@@ -1282,6 +1290,7 @@ modal.addEventListener('click',async e=>{
     if(e.target.closest('[data-delrev]')){m.stars=0;m.text='';m.init=true;deleteReview(m.oid);return}
     const hd=e.target.closest('[data-hide]'); if(hd){setHidden(hd.dataset.hide,true);return}
     if(e.target.closest('[data-hideorg]')){setHidden(m.oid,true);closeModal();return}
+    {const hs=e.target.closest('[data-hotset]');if(hs){await setHotPick(current||'MN',hs.dataset.hotset?m.oid:null);renderOrgModal(m);return}}
     const cb=e.target.closest('[data-complain]'); if(cb&&(S.guest||S.anon)&&S.live){openModal({kind:'loginreq',k:cb.dataset.complain,oid:m.oid});return}
     if(cb){const k=cb.dataset.complain;const pr=S.profile||{};openModal({kind:'complaint',k,oid:m.oid,step:1,f:{name:pr.name||'',phone:pr.phone||'',email:pr.email||'',type:k==='t'?'Сайн үйлчилгээ':'Үйлчилгээний чанар',staff:'',subj:'',body:'',ok:false}});return}
   }
@@ -1491,33 +1500,49 @@ function renderHot(){
   for(const [oid,arr] of Object.entries(S.reviewsByOrg)){const ra=oid.slice(0,oid.indexOf('.'));
     if(area==='MN'||isUnder(ra,area)||(ctrOf&&ra===ctrOf))by[oid]=arr;}
   let best=null;for(const [oid,arr] of Object.entries(by)){if(!best||arr.length>best[1].length||(arr.length===best[1].length&&arr[0].t>best[1][0].t))best=[oid,arr]}
+  const pk=hotPickFor(area); let pinned=false;
+  if(pk&&getOrg(pk)){best=[pk,S.reviewsByOrg[pk]||[]];pinned=true}
   const card=$('#hotCard');
   if(!best||!getOrg(best[0])){card.style.display='none';hotSig='';return}
   const [oid,arr]=best; const o=getOrg(oid); const list=arr.slice(0,20);
   resolveNames(list.filter(r=>!r.a).map(r=>r.uid));
-  const sig=area+'|'+oid+'|'+(S.isAdmin?1:0)+'|'+list.map(r=>r.key+r.t+(S.names[r.uid]||'')+rxSig(r.key)).join(',');
+  const sig=area+'|'+oid+'|'+(S.isAdmin?1:0)+(pinned?'p':'')+'|'+list.map(r=>r.key+r.t+(S.names[r.uid]||'')+rxSig(r.key)).join(',');
   if(sig===hotSig)return; const sameOrg=hotSig.split('|')[1]===oid; hotSig=sig;
   card.style.display='';
   const sc=oScore(oid),c=cls(sc);
   $('#hotOrg').innerHTML=`${orgIcon(o)}${esc(o.name)}`; $('#hotOrg').dataset.org=oid;
+  {let pe=$('#hotPin');if(!pe){pe=document.createElement('span');pe.id='hotPin';pe.className='hpin';$('#hotOrg').after(pe)}pe.textContent='📌 Онцолсон';pe.style.display=pinned?'':'none'}
+  {let ad=$('#hotAdm');if(!ad){ad=document.createElement('div');ad.id='hotAdm';ad.className='hotadm';card.appendChild(ad)}
+   ad.style.display=S.isAdmin?'':'none';
+   ad.innerHTML=S.isAdmin?(pinned?`<span class="note">⚙ Админ онцолсон.</span><button class="btn ghost sm" data-hotauto>Автомат болгох</button>`:`<span class="note">⚙ Автоматаар сонгогдсон (хамгийн их сэтгэгдэлтэй). Өөр байгууллага онцлохын тулд тухайн байгууллагыг нээгээд “🔥 Халуун сэдэв болгох” дарна уу.</span>`):'';}
   $('#hotN').innerHTML=`${arr.length} сэтгэгдэл${sc==null?'':` · <span style="color:${CLR[c]}">${Math.round(sc/5*100)}%</span>`}`;
   HOT.list=list; if(!sameOrg)HOT.i=0; if(HOT.i>=list.length)HOT.i=0;
+  if(!list.length){$('#hotWin').innerHTML='<div class="empty" style="padding:14px">Энэ байгууллагад одоогоор сэтгэгдэл алга — анхных нь болоорой!</div>';$('#hotIdx').textContent='';$('#hotPrev').style.visibility=$('#hotNext').style.visibility='hidden';$('#hotWin').style.height='60px';return}
+  $('#hotWin').style.height=list.length>1?'':'80px';
   hotShow(0,true);
 }
 const HOT={list:[],i:0,hover:false,timer:null};
 function hotShow(dir,instant){
   const L=HOT.list; if(!L.length)return;
-  HOT.i=(HOT.i+dir+L.length)%L.length; const r=L[HOT.i];
-  const nm=revName(r);const cc=r.s>=4?'g':r.s===3?'m':'b';
+  const n=L.length, step=2;
+  HOT.i=n<=2?0:((HOT.i+dir*step)%n+n)%n; if(HOT.i%2)HOT.i--;
+  const pair=[L[HOT.i]]; if(n>1)pair.push(L[(HOT.i+1)%n===HOT.i?HOT.i:(HOT.i+1)%n]);
+  if(n>1&&HOT.i+1>=n)pair.pop();
   const win=$('#hotWin');
-  win.querySelectorAll('.hc').forEach(el=>{if(instant)el.remove();else{el.classList.add('out');setTimeout(()=>el.remove(),400)}});
-  const d=document.createElement('div'); d.className='hc s'+cc+(instant?'':' in');
-  d.innerHTML=`<div class="hm"><span class="st">${starStr(r.s)}</span><span class="hn">${esc(nm)} · ${dateStr(r.t)}</span>${revMenu(r.key)}</div><p>${r.x?esc(r.x):'<i style="color:var(--tx3)">Зөвхөн од өгсөн</i>'}</p><div class="frx">${rxBtns(r.key)}</div>`;
-  win.appendChild(d);
-  $('#hotIdx').textContent=(HOT.i+1)+'/'+L.length;
-  $('#hotPrev').style.visibility=$('#hotNext').style.visibility=L.length>1?'':'hidden';
-  if(!HOT.timer)HOT.timer=setInterval(()=>{if(!HOT.hover&&!document.hidden&&S.page==='map'&&HOT.list.length>1&&!document.querySelector('#hotWin .rmenu.open'))hotShow(1)},4000);
+  win.querySelectorAll('.hpair,.hc,.empty').forEach(el=>{if(instant)el.remove();else{el.classList.add('out');setTimeout(()=>el.remove(),400)}});
+  const box=document.createElement('div'); box.className='hpair'+(instant?'':' in');
+  box.innerHTML=pair.map(r=>{const nm=revName(r);const cc=r.s>=4?'g':r.s===3?'m':'b';
+    return `<div class="hc s${cc}"><div class="hm"><span class="st">${starStr(r.s)}</span><span class="hn">${esc(nm)} · ${dateStr(r.t)}</span>${revMenu(r.key)}</div><p>${r.x?esc(r.x):'<i style="color:var(--tx3)">Зөвхөн од өгсөн</i>'}</p><div class="frx">${rxBtns(r.key)}</div></div>`}).join('');
+  win.appendChild(box);
+  const a=HOT.i+1,b=Math.min(HOT.i+2,n);
+  $('#hotIdx').textContent=(a===b?a:a+'–'+b)+'/'+n;
+  $('#hotPrev').style.visibility=$('#hotNext').style.visibility=n>2?'':'hidden';
+  if(!HOT.timer)HOT.timer=setInterval(()=>{if(!HOT.hover&&!document.hidden&&S.page==='map'&&HOT.list.length>2&&!document.querySelector('#hotWin .rmenu.open'))hotShow(1)},5000);
 }
+function hotPickFor(area){const P=S.hotPick||{};let x=area,g=0;while(x&&g++<8){const o=P[x];if(o&&!S.hidden[o])return o;if(x==='MN')break;x=parentOf(x)||'MN'}return null}
+async function setHotPick(area,oid){if(!S.isAdmin)return;const P=Object.assign({},S.hotPick||{});if(oid)P[area]=oid;else delete P[area];S.hotPick=P;hotSig='';renderHot();
+  try{await writeDoc('meta/hot',{p:P});toast(oid?'🔥 Халуун сэдэвт онцоллоо':'Халуун сэдэв автомат боллоо')}catch(e){}}
+document.getElementById('hotCard').addEventListener('click',e=>{if(e.target.closest('[data-hotauto]')){const area=current||'MN';let x=area;const P=S.hotPick||{};while(x&&!P[x]&&x!=='MN')x=parentOf(x)||'MN';setHotPick(P[x]?x:area,null)}});
 $('#hotPrev').onclick=()=>hotShow(-1);
 $('#hotNext').onclick=()=>hotShow(1);
 $('#hotCard').addEventListener('mouseenter',()=>{HOT.hover=true});
